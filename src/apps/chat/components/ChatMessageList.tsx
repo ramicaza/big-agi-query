@@ -50,8 +50,8 @@ export function ChatMessageList(props: {
   showTools?: boolean,
   isMessageSelectionMode: boolean, setIsMessageSelectionMode: (isMessageSelectionMode: boolean) => void,
   onExecuteChatHistory: (conversationId: string, history: DMessage[]) => void,
-  onImagineFromText: (conversationId: string, userText: string) => void,
-  setBigQueryResult?: (results: any) => void,
+  onImagineFromText: (conversationId: string, userText: string) => Promise<any>,
+  setBigQueryResult: (results: any) => void,
   sx?: SxProps
 }) {
   // state
@@ -79,8 +79,12 @@ export function ChatMessageList(props: {
   const handleMessageEdit = (messageId: string, newText: string) =>
     props.conversationId && editMessage(props.conversationId, messageId, { text: newText }, true);
 
-  const handleImagineFromText = (messageText: string) =>
-    props.conversationId && props.onImagineFromText(props.conversationId, messageText);
+  const handleImagineFromText = (messageText: string): Promise<any> => {
+    if (props.conversationId)
+      return props.onImagineFromText(props.conversationId, messageText);
+    else
+      return Promise.reject('No conversation');
+  };
 
   const handleRestartFromMessage = (messageId: string, offset: number) => {
     const truncatedHistory = messages.slice(0, messages.findIndex(m => m.id === messageId) + offset + 1);

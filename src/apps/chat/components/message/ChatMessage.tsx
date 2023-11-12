@@ -85,7 +85,7 @@ export function makeAvatar(messageAvatar: string | null, messageRole: DMessage['
       // display the purpose symbol
       if (messageOriginLLM === 'prodia')
         return <PaletteOutlinedIcon sx={iconSx} />;
-      const symbol = SystemPurposes[messagePurposeId as SystemPurposeId]?.symbol;
+      const symbol = SystemPurposes[messagePurposeId!]?.symbol;
       if (symbol)
         return <Box
           sx={{
@@ -130,8 +130,8 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
     // note that "model_not_found" is different than "The model `gpt-xyz` does not exist" message
     errorMessage = <>
       The API key appears to be unauthorized for {modelId || 'this model'}. You can change to <b>GPT-3.5
-      Turbo</b> and simultaneously <Link noLinkStyle href='https://openai.com/waitlist/gpt-4-api' target='_blank'>request
-      access</Link> to the desired model.
+        Turbo</b> and simultaneously <Link noLinkStyle href='https://openai.com/waitlist/gpt-4-api' target='_blank'>request
+          access</Link> to the desired model.
     </>;
   } else if (text.includes('"context_length_exceeded"')) {
     // TODO: propose to summarize or split the input?
@@ -149,7 +149,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
     errorMessage = <>
       The API key appears to be incorrect or to have expired.
       Please <Link noLinkStyle href='https://platform.openai.com/account/api-keys' target='_blank'>check your
-      API key</Link> and update it in <b>Models</b>.
+        API key</Link> and update it in <b>Models</b>.
     </>;
   } else if (text.includes('"insufficient_quota"')) {
     errorMessage = <>
@@ -170,7 +170,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
  * or collapsing long user messages.
  *
  */
-export function ChatMessage(props: { message: DMessage, diffText?: string, showDate?: boolean, isBottom?: boolean, noBottomBorder?: boolean, onMessageDelete?: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom?: (offset: number) => void, onImagine?: (messageText: string) => void, setBigQueryResult: (result: any) => void }) {
+export function ChatMessage(props: { message: DMessage, diffText?: string, showDate?: boolean, isBottom?: boolean, noBottomBorder?: boolean, onMessageDelete?: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom?: (offset: number) => void, onImagine?: (messageText: string) => Promise<void>, setBigQueryResult: (result: any) => void }) {
   const {
     text: messageText,
     sender: messageSender,
