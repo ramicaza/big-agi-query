@@ -8,6 +8,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HtmlIcon from '@mui/icons-material/Html';
 import SchemaIcon from '@mui/icons-material/Schema';
 import ShapeLineOutlinedIcon from '@mui/icons-material/ShapeLineOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 import { copyToClipboard } from '~/common/util/copyToClipboard';
 
@@ -243,6 +244,7 @@ function RenderCodeImpl(props: {
   };
 
   const [loadingQuery, setLoadingQuery] = React.useState(false);
+  const [queryError, setQueryError] = React.useState(null);
 
   const runQuery = async () => {
     setLoadingQuery(true);
@@ -257,8 +259,10 @@ function RenderCodeImpl(props: {
       const billableBytes = resp.result.totalBytesProcessed;
       console.log(`Billable bytes: ${billableBytes}`);
       props.setBigQueryResult && props.setBigQueryResult(resp.result);
-    } catch (err) {
-      console.error('Query error', err);
+    } catch (err: any) {
+      console.error('Query error during run', err);
+      console.log(err?.result?.error?.message || err?.result?.error?.status);
+      setQueryError(err?.result?.error?.message || err?.result?.error?.status);
     }
     setLoadingQuery(false);
   };
@@ -284,8 +288,9 @@ function RenderCodeImpl(props: {
       console.log(`Billable bytes: ${billableBytes}`);
       const cost = billableBytes * (6.25 / Math.pow(2, 40));
       setEstimatedCost(cost);
-    } catch (err) {
-      console.error('Query error', err);
+    } catch (err: any) {
+      console.error('Query error during estimateCost', err);
+      setQueryError(err?.result?.error?.message || err?.result?.error?.status);
     }
     setLoadingCost(false);
   };
@@ -310,8 +315,18 @@ function RenderCodeImpl(props: {
         '&:hover > .code-buttons': { opacity: 1 },
         ...(props.sx || {}),
       }}>
-
-      {/* Overlay Buttons */}
+      {/* SQL Error Banner */}
+      {queryError && (
+        <Box className="sql-error-banner" sx={{
+          backgroundColor: 'rgba(255, 0, 0, 0.1)',
+          color: 'error.contrastText',
+          p: 1, borderRadius: 'sm',
+          display: 'inline-flex', alignItems: 'center', // Changed from 'flex' to 'inline-flex'
+        }}>
+          <ErrorOutlineIcon color="error" sx={{ fontSize: 'inherit', mr: 1 }} />
+          <Typography level="body-xs" sx={{ fontWeight: 500 }}>{queryError}</Typography>
+        </Box>
+      )}
       <Box
         className='code-buttons'
         sx={{
@@ -378,28 +393,32 @@ function RenderCodeImpl(props: {
       </Box>
 
       {/* Title (highlighted code) */}
-      {blockTitle != inferredCodeLanguage && blockTitle.includes('.') && <Sheet sx={{ boxShadow: 'sm', borderRadius: 'sm', mb: 1 }}>
-        <Typography level='title-sm' sx={{ px: 1, py: 0.5 }}>
-          {blockTitle}
-          {/*{inferredCodeLanguage}*/}
-        </Typography>
-      </Sheet>}
+      {
+        blockTitle != inferredCodeLanguage && blockTitle.includes('.') && <Sheet sx={{ boxShadow: 'sm', borderRadius: 'sm', mb: 1 }}>
+          <Typography level='title-sm' sx={{ px: 1, py: 0.5 }}>
+            {blockTitle}
+            {/*{inferredCodeLanguage}*/}
+          </Typography>
+        </Sheet>
+      }
 
       {/* Renders HTML, or inline SVG, inline plantUML rendered, or highlighted code */}
-      {renderHTML ? <IFrameComponent htmlString={blockCode} />
-        : <Box
-          dangerouslySetInnerHTML={{
-            __html:
-              renderSVG ? blockCode
-                : (renderPlantUML && plantUmlHtmlData) ? plantUmlHtmlData
-                  : highlightedCode,
-          }}
-          sx={{
-            ...(renderSVG ? { lineHeight: 0 } : {}),
-            ...(renderPlantUML ? { textAlign: 'center' } : {}),
-          }}
-        />}
-    </Box>
+      {
+        renderHTML ? <IFrameComponent htmlString={blockCode} />
+          : <Box
+            dangerouslySetInnerHTML={{
+              __html:
+                renderSVG ? blockCode
+                  : (renderPlantUML && plantUmlHtmlData) ? plantUmlHtmlData
+                    : highlightedCode,
+            }}
+            sx={{
+              ...(renderSVG ? { lineHeight: 0 } : {}),
+              ...(renderPlantUML ? { textAlign: 'center' } : {}),
+            }}
+          />
+      }
+    </Box >
   );
 }
 
