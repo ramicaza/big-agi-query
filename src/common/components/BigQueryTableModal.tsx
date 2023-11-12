@@ -44,6 +44,7 @@ function convertBigQueryDataToColumns(data: BigQueryResponse) {
 }
 
 function convertBigQueryDataToRows(data: BigQueryResponse) {
+    if (!data.rows) return [];
     return data.rows.map((row, index) => {
         const rowData: { [key: string]: any } = { id: index };
         row.f.forEach((cell, cellIndex) => {
