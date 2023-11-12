@@ -8,6 +8,7 @@ import { imaginePromptFromText } from '~/modules/aifn/imagine/imaginePromptFromT
 import { useModelsStore } from '~/modules/llms/store-llms';
 
 import { ConfirmationModal } from '~/common/components/ConfirmationModal';
+import { BigQueryTableModal } from '~/common/components/BigQueryTableModal';
 import { createDMessage, DMessage, useChatStore } from '~/common/state/store-chats';
 import { useGlobalShortcut } from '~/common/components/useGlobalShortcut';
 import { useLayoutPluggable } from '~/common/layout/store-applayout';
@@ -209,6 +210,8 @@ export function AppChat() {
 
   useLayoutPluggable(centerItems, drawerItems, menuItems);
 
+  const [bigQueryResult, setBigQueryResult] = React.useState<any>(null);
+
   return <>
 
     <ChatMessageList
@@ -216,6 +219,7 @@ export function AppChat() {
       isMessageSelectionMode={isMessageSelectionMode} setIsMessageSelectionMode={setIsMessageSelectionMode}
       onExecuteChatHistory={handleExecuteChatHistory}
       onImagineFromText={handleImagineFromText}
+      setBigQueryResult={setBigQueryResult}
       sx={{
         flexGrow: 1,
         backgroundColor: 'background.level1',
@@ -236,6 +240,7 @@ export function AppChat() {
       conversationId={activeConversationId} messageId={null}
       isDeveloperMode={systemPurposeId === 'Developer'}
       onNewMessage={handleComposerNewMessage}
+      bigQueryResult={bigQueryResult}
       sx={{
         zIndex: 21, // position: 'sticky', bottom: 0,
         backgroundColor: 'background.surface',
@@ -256,6 +261,9 @@ export function AppChat() {
       open onClose={() => setClearConfirmationId(null)} onPositive={handleConfirmedClearConversation}
       confirmationText={'Are you sure you want to discard all the messages?'} positiveActionText={'Clear conversation'}
     />}
+
+    {/* DataGrid */}
+    {bigQueryResult && <BigQueryTableModal open onClose={()=>setBigQueryResult(null)} data={bigQueryResult} /> }
 
     {/* [confirmation] Delete All */}
     {!!deleteConfirmationId && <ConfirmationModal

@@ -170,7 +170,7 @@ function explainErrorInMessage(text: string, isAssistant: boolean, modelId?: str
  * or collapsing long user messages.
  *
  */
-export function ChatMessage(props: { message: DMessage, diffText?: string, showDate?: boolean, isBottom?: boolean, noBottomBorder?: boolean, onMessageDelete?: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom?: (offset: number) => void, onImagine?: (messageText: string) => void }) {
+export function ChatMessage(props: { message: DMessage, diffText?: string, showDate?: boolean, isBottom?: boolean, noBottomBorder?: boolean, onMessageDelete?: () => void, onMessageEdit: (text: string) => void, onMessageRunFrom?: (offset: number) => void, onImagine?: (messageText: string) => void, setBigQueryResult: (result: any) => void }) {
   const {
     text: messageText,
     sender: messageSender,
@@ -390,7 +390,7 @@ export function ChatMessage(props: { message: DMessage, diffText?: string, showD
             block.type === 'html'
               ? <RenderHtml key={'html-' + index} htmlBlock={block} sx={codeSx} />
               : block.type === 'code'
-                ? <RenderCode key={'code-' + index} codeBlock={block} sx={codeSx} />
+                ? <RenderCode key={'code-' + index} codeBlock={block} setBigQueryResult={props.setBigQueryResult} sx={codeSx} />
                 : block.type === 'image'
                   ? <RenderImage key={'image-' + index} imageBlock={block} allowRunAgain={props.isBottom === true} onRunAgain={handleMenuRunAgain} />
                   : block.type === 'latex'

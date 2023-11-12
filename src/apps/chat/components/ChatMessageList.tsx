@@ -51,6 +51,7 @@ export function ChatMessageList(props: {
   isMessageSelectionMode: boolean, setIsMessageSelectionMode: (isMessageSelectionMode: boolean) => void,
   onExecuteChatHistory: (conversationId: string, history: DMessage[]) => void,
   onImagineFromText: (conversationId: string, userText: string) => void,
+  setBigQueryResult?: (results: any) => void,
   sx?: SxProps
 }) {
   // state
@@ -187,6 +188,7 @@ export function ChatMessageList(props: {
             onMessageEdit={newText => handleMessageEdit(message.id, newText)}
             onMessageRunFrom={(offset: number) => handleRestartFromMessage(message.id, offset)}
             onImagine={handleImagineFromText}
+            setBigQueryResult={props.setBigQueryResult}
           />
 
         ),
