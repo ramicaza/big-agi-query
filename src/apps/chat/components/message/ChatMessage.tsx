@@ -192,6 +192,7 @@ function useSanityTextDiffs(text: string, diffText: string | undefined) {
  */
 export function ChatMessage(props: {
   message: DMessage,
+  hideAvatars?: boolean,
   showDate?: boolean, diffText?: string,
   isBottom?: boolean, noBottomBorder?: boolean,
   isImagining?: boolean, isSpeaking?: boolean,
@@ -202,6 +203,7 @@ export function ChatMessage(props: {
   onTextImagine?: (text: string) => Promise<void>
   onTextSpeak?: (text: string) => Promise<void>
   setBigQueryResult: (result: any) => void
+  sx?: SxProps,
 }) {
 
   // state
@@ -214,8 +216,8 @@ export function ChatMessage(props: {
   // const contentRef = React.useRef<HTMLUListElement>(null);
 
   // external state
-  const { showAvatars, renderMarkdown, doubleClickToEdit } = useUIPreferencesStore(state => ({
-    showAvatars: state.zenMode !== 'cleaner',
+  const { cleanerLooks, renderMarkdown, doubleClickToEdit } = useUIPreferencesStore(state => ({
+    cleanerLooks: state.zenMode === 'cleaner',
     renderMarkdown: state.renderMarkdown,
     doubleClickToEdit: state.doubleClickToEdit,
   }), shallow);
@@ -233,10 +235,13 @@ export function ChatMessage(props: {
     created: messageCreated,
     updated: messageUpdated,
   } = props.message;
+
   const fromAssistant = messageRole === 'assistant';
   const fromSystem = messageRole === 'system';
   const fromUser = messageRole === 'user';
   const wasEdited = !!messageUpdated;
+
+  const showAvatars = props.hideAvatars !== true && !cleanerLooks;
 
   const textSel = selMenuText ? selMenuText : messageText;
   const isSpecialProdia = textSel.startsWith('https://images.prodia.xyz/') || textSel.startsWith('/imagine') || textSel.startsWith('/img');
@@ -425,6 +430,7 @@ export function ChatMessage(props: {
         ...(ENABLE_COPY_MESSAGE_OVERLAY && { position: 'relative' }),
         ...(props.isBottom === true && { mb: 'auto' }),
         '&:hover > button': { opacity: 1 },
+        ...props.sx,
       }}
     >
 
@@ -488,7 +494,7 @@ export function ChatMessage(props: {
             ) : (
               <Box
                 // ref={contentRef}
-                onContextMenu={ENABLE_SELECTION_RIGHT_CLICK_MENU ? event => handleMouseUp(event.nativeEvent) : undefined}
+                onContextMenu={(ENABLE_SELECTION_RIGHT_CLICK_MENU && !!props.onMessageEdit) ? event => handleMouseUp(event.nativeEvent) : undefined}
               >
                 {parseBlocks(collapsedText, fromSystem, diffs).map((block, index) =>
                   block.type === 'html'
