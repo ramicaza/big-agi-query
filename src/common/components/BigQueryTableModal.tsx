@@ -39,7 +39,7 @@ function convertBigQueryDataToColumns(data: BigQueryResponse) {
         sortable: true,
         filter: true,
         resizable: true,
-        width: field.type === 'STRING' ? 200 : 100,
+        // width: field.type === 'STRING' ? 150 : 100,
     }));
 }
 
@@ -88,6 +88,7 @@ export function BigQueryTableModal({
     const onGridReady = useCallback((params: GridReadyEvent) => {
         const datasource = getServerSideDatasource(data);
         params.api.setServerSideDatasource(datasource);
+        params.columnApi.autoSizeAllColumns();
     }, [data]);
 
     const columns = convertBigQueryDataToColumns(data);

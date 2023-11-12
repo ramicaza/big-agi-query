@@ -382,10 +382,10 @@ function RenderCodeImpl(props: {
             <Tooltip title="Run in BQ" variant='solid'>
               <IconButton
                 variant='outlined'
-                color='neutral'
+                color={estimatedCost === null ? 'neutral' : 'success'}
                 onClick={runQuery}
               >
-                {loadingQuery ? <CircularProgress size='sm' /> : <PlayArrowIcon />}
+                {loadingQuery ? <CircularProgress size='sm' /> : <PlayArrowIcon color={estimatedCost === null ? 'disabled' : 'success'} />}
               </IconButton>
             </Tooltip>
           </>
