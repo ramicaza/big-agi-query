@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { shallow } from 'zustand/shallow';
 
-import { Box, Button, ButtonGroup, Card, Grid, IconButton, Stack, Textarea, Tooltip, Typography, useTheme } from '@mui/joy';
+import { Box, Button, ButtonGroup, Card, Grid, IconButton, Stack, Textarea, Tooltip, Typography } from '@mui/joy';
 import { ColorPaletteProp, SxProps, VariantProp } from '@mui/joy/styles/types';
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
+import AutoModeIcon from '@mui/icons-material/AutoMode';
 import CallIcon from '@mui/icons-material/Call';
 import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -39,6 +40,7 @@ import { ChatModeId, useComposerStartupText } from './store-composer';
 import { ChatModeMenu } from './ChatModeMenu';
 import { TokenBadge } from './TokenBadge';
 import { TokenProgressbar } from './TokenProgressbar';
+import { useDebouncer } from '~/common/components/useDebouncer';
 
 
 /// Text template helpers
@@ -105,6 +107,17 @@ const MicButton = (props: { variant: VariantProp, color: ColorPaletteProp, onCli
     </IconButton>
   </Tooltip>;
 
+const MicContinuationButton = (props: { variant: VariantProp, color: ColorPaletteProp, onClick: () => void, sx?: SxProps }) =>
+  <Tooltip placement='bottom' title={
+    <Box sx={{ p: 1, lineHeight: 2, gap: 1 }}>
+      Voice Continuation
+    </Box>
+  }>
+    <IconButton variant={props.variant} color={props.color} onClick={props.onClick} sx={props.sx}>
+      <AutoModeIcon />
+    </IconButton>
+  </Tooltip>;
+
 const CallButtonMobile = (props: { disabled?: boolean, onClick: () => void, sx?: SxProps }) =>
   <IconButton variant='soft' color='primary' disabled={props.disabled} onClick={props.onClick} sx={props.sx}>
     <CallIcon />
@@ -143,7 +156,8 @@ export function Composer(props: {
   sx?: SxProps;
 }) {
   // state
-  const [composeText, setComposeText] = React.useState('');
+  const [composeText, debouncedText, setComposeText] = useDebouncer('', 300, 1200, true);
+  const [micContinuation, setMicContinuation] = React.useState(false);
   const [speechInterimResult, setSpeechInterimResult] = React.useState<SpeechResult | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [reducerText, setReducerText] = React.useState('');
@@ -152,7 +166,6 @@ export function Composer(props: {
   const attachmentFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // external state
-  const theme = useTheme();
   const [chatModeId, setChatModeId] = React.useState<ChatModeId>('immediate');
   const [startupText, setStartupText] = useComposerStartupText();
   const [enterIsNewline, experimentalLabs] = useUIPreferencesStore(state => [state.enterIsNewline, state.experimentalLabs], shallow);
@@ -173,13 +186,13 @@ export function Composer(props: {
       setStartupText(null);
       setComposeText(startupText);
     }
-  }, [startupText, setStartupText]);
+  }, [setComposeText, setStartupText, startupText]);
 
   // derived state
   const tokenLimit = chatLLM?.contextTokens || 0;
   const directTokens = React.useMemo(() => {
-    return (!composeText || !chatLLMId) ? 4 : 4 + countModelTokens(composeText, chatLLMId, 'composer text');
-  }, [chatLLMId, composeText]);
+    return (!debouncedText || !chatLLMId) ? 4 : 4 + countModelTokens(debouncedText, chatLLMId, 'composer text');
+  }, [chatLLMId, debouncedText]);
   const historyTokens = conversationTokenCount;
   const responseTokens = (chatLLM?.options as LLMOptionsOpenAI /* FIXME: BIG ASSUMPTION */)?.llmResponseTokens || 0;
   const remainingTokens = tokenLimit - directTokens - historyTokens - responseTokens;
@@ -230,23 +243,48 @@ export function Composer(props: {
   };
 
 
+  const micIsRunning = !!speechInterimResult;
+  const micTurnBackOn = !assistantTyping && !micIsRunning && micContinuation;
+  const micIsContinuing = micIsRunning && micContinuation;
+
   const onSpeechResultCallback = React.useCallback((result: SpeechResult) => {
     setSpeechInterimResult(result.done ? null : { ...result });
     if (result.done) {
-      setComposeText(prevText => {
-        prevText = prevText.trim();
-        const transcript = result.transcript.trim();
-        return prevText ? prevText + ' ' + transcript : transcript;
-      });
+      // append the transcript
+      const transcript = result.transcript.trim();
+      let newText = (composeText || '').trim();
+      newText = newText ? newText + ' ' + transcript : transcript;
+
+      // auto-send if requested
+      const autoSend = micContinuation && newText.length >= 1 && !!props.conversationId; //&& assistantTyping;
+      if (autoSend)
+        props.onNewMessage(chatModeId, props.conversationId!, newText);
+
+      // set the text (or clear if auto-sent)
+      setComposeText(autoSend ? '' : newText);
     }
-  }, []);
+  }, [chatModeId, composeText, micContinuation, props, setComposeText]);
 
-  const { isSpeechEnabled, isSpeechError, isRecordingAudio, isRecordingSpeech, toggleRecording } = useSpeechRecognition(onSpeechResultCallback, 2000, 'm');
+  const { isSpeechEnabled, isSpeechError, isRecordingAudio, isRecordingSpeech, toggleRecording } =
+    useSpeechRecognition(onSpeechResultCallback, 2000, 'm');
 
-  const handleMicClicked = () => toggleRecording();
+  const handleMicClicked = () => {
+    if (micIsContinuing)
+      setMicContinuation(false);
+    toggleRecording();
+  };
+
+  const handleToggleMicContinuation = () => setMicContinuation(continued => !continued);
+
+  // autostart the microphone if the assistant stopped typing
+  React.useEffect(() => {
+    if (micTurnBackOn)
+      toggleRecording();
+  }, [toggleRecording, micTurnBackOn]);
 
   const micColor: ColorPaletteProp = isSpeechError ? 'danger' : isRecordingSpeech ? 'primary' : isRecordingAudio ? 'neutral' : 'neutral';
   const micVariant: VariantProp = isRecordingSpeech ? 'solid' : isRecordingAudio ? 'outlined' : 'plain';
+
 
   async function loadAndAttachFiles(files: FileList, overrideFileNames: string[]) {
 
@@ -341,7 +379,7 @@ export function Composer(props: {
       // no text/html or text/plain item found
       console.log('Clipboard item has no text/html or text/plain item.', clipboardItem.types, clipboardItem);
     }
-  }, []);
+  }, [setComposeText]);
 
   useGlobalShortcut('v', true, true, handlePasteButtonClicked);
 
@@ -493,7 +531,7 @@ export function Composer(props: {
                   textarea: {
                     enterKeyHint: enterIsNewline ? 'enter' : 'send',
                     sx: {
-                      ...(isSpeechEnabled ? { pr: { md: 5 } } : {}),
+                      ...(isSpeechEnabled && { pr: { md: 5 } }),
                       mb: 0.5,
                     },
                   },
@@ -512,12 +550,21 @@ export function Composer(props: {
             </Box>
 
             {isSpeechEnabled && (
-              <MicButton variant={micVariant} color={micColor} onClick={handleMicClicked} sx={{
-                ...hideOnMobile,
+              <Box sx={{
                 position: 'absolute', top: 0, right: 0,
                 zIndex: 21,
                 m: 1,
-              }} />
+                display: 'flex', flexDirection: 'column', gap: 1,
+              }}>
+                <MicButton variant={micVariant} color={micColor} onClick={handleMicClicked} sx={hideOnMobile} />
+
+                {micIsRunning && (
+                  <MicContinuationButton
+                    variant={micContinuation ? 'plain' : 'plain'} color={micContinuation ? 'primary' : 'neutral'}
+                    onClick={handleToggleMicContinuation}
+                  />
+                )}
+              </Box>
             )}
 
             {!!tokenLimit && (
@@ -527,21 +574,22 @@ export function Composer(props: {
               />
             )}
 
-            {!!speechInterimResult && (
+            {micIsRunning && (
               <Card
                 color='primary' invertedColors variant='soft'
                 sx={{
                   display: 'flex',
                   position: 'absolute', bottom: 0, left: 0, right: 0, top: 0,
                   // alignItems: 'center', justifyContent: 'center',
-                  border: `1px solid ${theme.palette.primary.solidBg}`,
-                  borderRadius: theme.radius.xs,
+                  border: `1px solid`,
+                  borderColor: 'primary.solidBg',
+                  borderRadius: 'sm',
                   zIndex: 20,
                   px: 1.5, py: 1,
                 }}>
                 <Typography>
                   {speechInterimResult.transcript}{' '}
-                  <span style={{ opacity: 0.5 }}>{speechInterimResult.interimTranscript}</span>
+                  <span style={{ opacity: 0.8 }}>{speechInterimResult.interimTranscript}</span>
                 </Typography>
               </Card>
             )}
@@ -553,7 +601,7 @@ export function Composer(props: {
                 position: 'absolute', bottom: 0, left: 0, right: 0, top: 0,
                 alignItems: 'center', justifyContent: 'space-evenly',
                 border: '2px dashed',
-                borderRadius: theme.radius.xs,
+                borderRadius: 'xs',
                 zIndex: 10,
               }}
               onDragLeave={handleOverlayDragLeave}
@@ -578,8 +626,8 @@ export function Composer(props: {
 
 
               {/* [mobile] [corner] Call button */}
-              {APP_CALL_ENABLED && isChat && <CallButtonMobile
-                disabled={!props.conversationId || !chatLLM}
+              {isChat && <CallButtonMobile
+                disabled={!APP_CALL_ENABLED || !props.conversationId || !chatLLM}
                 onClick={handleCallClicked}
                 sx={{ ...hideOnDesktop, mr: { xs: 1, md: 2 } }}
               />}
@@ -605,8 +653,9 @@ export function Composer(props: {
                     <Button
                       fullWidth variant={isWriteUser ? 'soft' : 'solid'} color={isReAct ? 'success' : (isFollowUp || isDraw || isDrawPlus) ? 'warning' : 'primary'} disabled={!props.conversationId || !chatLLM}
                       onClick={() => handleSendClicked(chatModeId)}
-                      endDecorator={isWriteUser ? <SendIcon sx={{ fontSize: 18 }} /> : isReAct ? <PsychologyIcon /> : <TelegramIcon />}
+                      endDecorator={micIsContinuing ? <AutoModeIcon /> : isWriteUser ? <SendIcon sx={{ fontSize: 18 }} /> : isReAct ? <PsychologyIcon /> : <TelegramIcon />}
                     >
+                      {micIsContinuing && 'Voice '}
                       {isWriteUser ? 'Write' : isFollowUp ? 'Chat+' : isReAct ? 'ReAct' : isDraw ? 'Draw' : isDrawPlus ? 'Draw+' : 'Chat'}
                     </Button>
                     <IconButton disabled={!props.conversationId || !chatLLM || !!chatModeMenuAnchor} onClick={handleToggleChatMode}>
@@ -620,7 +669,7 @@ export function Composer(props: {
             {/* [desktop] other buttons (aligned to bottom for now, and mutually exclusive) */}
             <Box sx={{ flexGrow: 1, flexDirection: 'column', gap: 1, justifyContent: 'flex-end', ...hideOnMobile }}>
 
-              {APP_CALL_ENABLED && isChat && <CallButtonDesktop disabled={!props.conversationId || !chatLLM} onClick={handleCallClicked} />}
+              {isChat && <CallButtonDesktop disabled={!APP_CALL_ENABLED || !props.conversationId || !chatLLM} onClick={handleCallClicked} />}
 
               {(isDraw || isDrawPlus) && <DrawOptionsButtonDesktop onClick={handleDrawOptionsClicked} />}
             </Box>
