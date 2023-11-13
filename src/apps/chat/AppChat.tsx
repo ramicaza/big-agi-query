@@ -162,6 +162,7 @@ export function AppChat() {
 
 
   const handleClearConversation = (conversationId: string) => setClearConfirmationId(conversationId);
+  useGlobalShortcut('x', true, true, () => isConversationEmpty || setClearConfirmationId(activeConversationId));
 
   const handleConfirmedClearConversation = () => {
     if (clearConfirmationId) {
