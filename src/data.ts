@@ -1,8 +1,10 @@
 import * as React from 'react';
 
-export type SystemPurposeId = 'Catalyst' | 'Custom' | 'Designer' | 'Developer' | 'Executive' | 'Generic' | 'Scientist';
+export type SystemPurposeId = 'Catalyst' | 'Custom' | 'Designer' | 'Developer' | 'Executive' | 'Generic' | 'Scientist' | 'Symbiosys';
 
 export const defaultSystemPurposeId: SystemPurposeId = 'Generic';
+
+import { SymbiosysMessage } from './symb-message';
 
 type SystemPurposeData = {
   title: string;
@@ -17,6 +19,15 @@ type SystemPurposeData = {
 };
 
 export const SystemPurposes: { [key in SystemPurposeId]: SystemPurposeData } = {
+  Symbiosys: {
+    title: 'Symbyosis',
+    description: 'Symbiosys big brain to write queries and code',
+    examples: ['Get me the number of distinct visits by gclid in doordash', 'How many clicks did chewy have by date in November?'],
+    systemMessage: SymbiosysMessage + '\nCurrent date: {{Today}}',
+    symbol: '🤖',
+    call: { starters: ['What\'s the task?', 'What can I do?', 'Ready for your task.', 'Yes?'] },
+    voices: { elevenLabs: { voiceId: 'flq6f7yk4E4fJM5XTYuZ' } },
+  },
   Developer: {
     title: 'Developer',
     description: 'Helps you code',
