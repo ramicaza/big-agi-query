@@ -345,7 +345,18 @@ function RenderCodeImpl(props: {
           '&:hover > .overlay-buttons': { opacity: 1 },
           ...(props.sx || {}),
         }}>
-
+        {/* SQL Error Banner */}
+        {queryError && (
+          <Box className="sql-error-banner" sx={{
+            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+            color: 'error.contrastText',
+            p: 1, borderRadius: 'sm',
+            display: 'inline-flex', alignItems: 'center', // Changed from 'flex' to 'inline-flex'
+          }}>
+            <ErrorOutlineIcon color="error" sx={{ fontSize: 'inherit', mr: 1 }} />
+            <Typography level="body-xs" sx={{ fontWeight: 500 }}>{queryError}</Typography>
+          </Box>
+        )}
         {/* Markdown Title (File/Type) */}
         {blockTitle != inferredCodeLanguage && blockTitle.includes('.') && (
           <Sheet sx={{ boxShadow: 'sm', borderRadius: 'sm', mb: 1 }}>
