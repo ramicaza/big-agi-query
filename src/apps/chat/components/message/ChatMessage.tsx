@@ -28,7 +28,7 @@ import { KeyStroke } from '~/common/components/KeyStroke';
 import { Link } from '~/common/components/Link';
 import { SystemPurposeId, SystemPurposes } from '../../../../data';
 import { copyToClipboard } from '~/common/util/copyToClipboard';
-import { cssRainbowColorKeyframes, hideOnMobile } from '~/common/app.theme';
+import { cssRainbowColorKeyframes } from '~/common/app.theme';
 import { prettyBaseModel } from '~/common/util/modelUtils';
 import { useUIPreferencesStore } from '~/common/state/store-ui';
 
@@ -496,7 +496,7 @@ export function ChatMessage(props: {
                 block.type === 'html'
                   ? <RenderHtml key={'html-' + index} htmlBlock={block} sx={codeSx} />
                   : block.type === 'code'
-                    ? <RenderCode key={'code-' + index} codeBlock={block} sx={codeSx} setBigQueryResult={props.setBigQueryResult} />
+                    ? <RenderCode key={'code-' + index} codeBlock={block} sx={codeSx} noCopyButton={props.filterOnlyCode} setBigQueryResult={props.setBigQueryResult} />
                     : block.type === 'image'
                       ? <RenderImage key={'image-' + index} imageBlock={block} allowRunAgain={props.isBottom === true} onRunAgain={handleOpsRunAgain} />
                       : block.type === 'latex'
@@ -573,7 +573,7 @@ export function ChatMessage(props: {
                   ? 'Retry from here'
                   : <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'space-between', gap: 1 }}>
                     Retry
-                    <KeyStroke light combo='Ctrl + Shift + R' sx={hideOnMobile} />
+                    <KeyStroke light combo='Ctrl + Shift + R' />
                   </Box>
               }
             </MenuItem>

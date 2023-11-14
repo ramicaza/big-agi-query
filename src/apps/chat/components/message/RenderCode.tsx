@@ -45,7 +45,7 @@ export const overlayButtonsSx: SxProps = {
 };
 
 function RenderCodeImpl(props: {
-  codeBlock: CodeBlock, sx?: SxProps,
+  codeBlock: CodeBlock, noCopyButton?: boolean, sx?: SxProps,
   highlightCode: (inferredCodeLanguage: string | null, blockCode: string) => string,
   inferCodeLanguage: (blockTitle: string, code: string) => string | null,
   // TODO: simplify resuls and give them a proper type
@@ -417,11 +417,11 @@ function RenderCodeImpl(props: {
           )}
           {canCodepen && <OpenInCodepen codeBlock={{ code: blockCode, language: inferredCodeLanguage || undefined }} />}
           {canReplit && <OpenInReplit codeBlock={{ code: blockCode, language: inferredCodeLanguage || undefined }} />}
-          <Tooltip title='Copy Code' variant='solid'>
+          {props.noCopyButton !== true && <Tooltip title='Copy Code' variant='solid'>
             <IconButton variant='outlined' color='neutral' onClick={handleCopyToClipboard}>
               <ContentCopyIcon />
             </IconButton>
-          </Tooltip>
+          </Tooltip>}
           {inferredCodeLanguage === 'sql' && (
             <>
               <Tooltip title="Cost Estimate" variant='solid'>
@@ -462,12 +462,12 @@ const RenderCodeDynamic = React.lazy(async () => {
   const { highlightCode, inferCodeLanguage } = await import('./codePrism');
 
   return {
-    default: (props: { codeBlock: CodeBlock, sx?: SxProps }) =>
+    default: (props: { codeBlock: CodeBlock, noCopyButton?: boolean, sx?: SxProps }) =>
       <RenderCodeImpl highlightCode={highlightCode} inferCodeLanguage={inferCodeLanguage} {...props} />,
   };
 });
 
-export const RenderCode = (props: { codeBlock: CodeBlock, sx?: SxProps, setBigQueryResult: (result: any) => void }) =>
+export const RenderCode = (props: { codeBlock: CodeBlock, noCopyButton?: boolean, sx?: SxProps, setBigQueryResult: (result: any) => void }) =>
   <React.Suspense fallback={<Box component='code' sx={{ p: 1.5, display: 'block', ...(props.sx || {}) }} />}>
     <RenderCodeDynamic {...props} />
   </React.Suspense>;
