@@ -209,9 +209,9 @@ function RenderCodeImpl(props: {
           // 'maxResults': PAGE_SIZE,
           maxResults: 0, // actual results are fetched in attemptQueryResults
           timeoutMs: 180000, // we never want to deal with the job id, almost any query is faster than 3 min
-          formatOptions: {
-            useInt64Timestamp: false,
-          },
+          // formatOptions: {
+          //   useInt64Timestamp: true,
+          // },
         },
       });
     }
