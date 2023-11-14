@@ -23,7 +23,6 @@ import { persist } from 'zustand/middleware';
 
 // TODO: make these configurable in UI
 const PROJECT_ID = 'symbiosys-prod';
-const LOCATION = 'us-east4';
 const PAGE_SIZE = 100;
 
 // TODO: move this to an external hook for cleaner code
@@ -204,7 +203,6 @@ function RenderCodeImpl(props: {
       return gapi.client.bigquery.jobs.query({
         'projectId': PROJECT_ID,
         'resource': {
-          location: LOCATION,
           query: query,
           useLegacySql: false,
           dryRun: dryRun,
@@ -231,25 +229,23 @@ function RenderCodeImpl(props: {
       }
     };
 
-    const attemptQueryResults = async (
-      jobId: string, startRow: number | null = null
-    ) => gapi.client.bigquery.jobs.getQueryResults({
+    const attemptQueryResults = async (startRow: number | null = null) => gapi.client.bigquery.jobs.getQueryResults({
       'projectId': PROJECT_ID,
-      'location': LOCATION,
+      'location': location,
       'jobId': jobId,
       'maxResults': PAGE_SIZE,
       'timeoutMs': 180000, // we never want to deal with the job id, almost any query is faster than 3 min
       'startIndex': startRow,
     });
 
-    const getQueryResultsWithRetry = async (jobId: string, startRow: number | null = null) => {
+    const getQueryResultsWithRetry = async (startRow: number | null = null) => {
       try {
-        if (!jobId || (startRow !== 0 && !startRow)) throw new Error('No jobId or startRow provided');
-        return await attemptQueryResults(jobId, startRow);
+        if (!jobId || !location || (startRow !== 0 && !startRow)) throw new Error('One of {jobId, location, startRow} not provided');
+        return await attemptQueryResults(startRow);
       } catch (error) {
         if (autoLogin) {
           await getToken(error); // Attempt to get a new token
-          return await attemptQueryResults(jobId, startRow); // Retry the query
+          return await attemptQueryResults(startRow); // Retry the query
         } else {
           throw error; // If autoLogin is false, throw the error
         }
@@ -257,15 +253,17 @@ function RenderCodeImpl(props: {
     };
 
     let jobId: string;
+    let location: string;
 
     // Function to fetch the next page
     const fetchNextPage = async (request: { startRow: number }) => {
-      const { result: nextPageResults } = await getQueryResultsWithRetry(jobId, request.startRow);
+      const { result: nextPageResults } = await getQueryResultsWithRetry(request.startRow);
       return nextPageResults; // Return the next page of results
     };
     // Execute the initial query and get the first page of results
     const resp = await queryWithRetry();
     jobId = resp.result.jobReference.jobId;
+    location = resp.result.jobReference.location;
 
     // Return the first page of results along with the fetchNextPage function
     resp.result.fetchNextPage = fetchNextPage;
