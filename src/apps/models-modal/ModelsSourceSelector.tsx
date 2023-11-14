@@ -15,7 +15,7 @@ import { useIsMobile } from '~/common/components/useMatchMedia';
 
 
 /*function locationIcon(vendor?: IModelVendor | null) {
-  if (vendor && vendor.id === 'openai' && ModelVendorOpenAI.hasServerKey)
+  if (vendor && vendor.id === 'openai' && ModelVendorOpenAI.hasBackendCap?.())
     return <CloudDoneOutlinedIcon />;
   return !vendor ? null : vendor.location === 'local' ? <ComputerIcon /> : <CloudOutlinedIcon />;
 }*/
@@ -64,7 +64,7 @@ export function ModelsSourceSelector(props: {
   }, [addModelSource, props]);
 
 
-  const enableDeleteButton = !!props.selectedSourceId && (modelSources.length > 1 /*|| (process.env.NODE_ENV === 'development')*/);
+  const enableDeleteButton = !!props.selectedSourceId && modelSources.length > 1;
 
   const handleDeleteSource = (id: DModelSourceId) => setConfirmDeletionSourceId(id);
 
@@ -90,7 +90,7 @@ export function ModelsSourceSelector(props: {
           component: (
             <MenuItem key={vendor.id} disabled={!enabled} onClick={() => handleAddSourceFromVendor(vendor.id)}>
               <ListItemDecorator>
-                {vendorIcon(vendor, !!vendor.hasServerKey)}
+                {vendorIcon(vendor, !!vendor.hasBackendCap && vendor.hasBackendCap())}
               </ListItemDecorator>
               {vendor.name}{/*{sourceCount > 0 && ` (added)`}*/}
             </MenuItem>

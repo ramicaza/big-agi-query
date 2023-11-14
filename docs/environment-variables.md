@@ -3,7 +3,7 @@
 This document provides an explanation of the environment variables used in the big-AGI application.
 
 **All variables are optional**; and _UI options_ take precedence over _backend environment variables_,
-which take place over _defaults_. This file is kept in sync with [`../src/common/types/env.d.ts`](../src/common/types/env.d.ts).
+which take place over _defaults_. This file is kept in sync with [`../src/server/env.mjs`](../src/server/env.mjs).
 
 ### Setting Environment Variables
 
@@ -38,11 +38,11 @@ HELICONE_API_KEY=
 ELEVENLABS_API_KEY=
 ELEVENLABS_API_HOST=
 ELEVENLABS_VOICE_ID=
+# Text-To-Image
+PRODIA_API_KEY=
 # Google Custom Search
 GOOGLE_CLOUD_API_KEY=
 GOOGLE_CSE_ID=
-# Text-To-Image
-PRODIA_API_KEY=
 ```
 
 ## Variables Documentation
