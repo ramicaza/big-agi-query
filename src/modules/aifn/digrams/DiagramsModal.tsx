@@ -179,6 +179,7 @@ export function DiagramsModal(props: { config: DiagramConfig, onClose: () => voi
         message={message} hideAvatars noBottomBorder noMarkdown filterOnlyCode
         codeBackground='background.surface'
         onMessageEdit={(text) => setMessage({ ...message, text })}
+        setBigQueryResult={() => null}
         sx={{
           backgroundColor: abortController ? 'background.level3' : 'background.level2',
           marginX: 'calc(-1 * var(--Card-padding))',

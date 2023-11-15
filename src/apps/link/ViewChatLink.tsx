@@ -123,6 +123,7 @@ export function ViewChatLink(props: { conversation: DConversation, storedAt: Dat
               key={'msg-' + message.id} message={message}
               showDate={idx === 0 || idx === filteredMessages.length - 1}
               onMessageEdit={text => message.text = text}
+              setBigQueryResult={() => null}
             />,
           )}
 

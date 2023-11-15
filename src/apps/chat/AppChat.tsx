@@ -249,7 +249,6 @@ export function AppChat() {
       conversationId={activeConversationId} messageId={null}
       isDeveloperMode={systemPurposeId === 'Developer'}
       onNewMessage={handleComposerNewMessage}
-      bigQueryResult={bigQueryResult}
       sx={{
         zIndex: 21, // position: 'sticky', bottom: 0,
         backgroundColor: 'background.surface',

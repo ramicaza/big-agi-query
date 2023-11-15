@@ -49,7 +49,7 @@ export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
         {/* Style Sheets (injected and server-side) */}
         <meta name='emotion-insertion-point' content='' />
 
-        <script src="https://apis.google.com/js/api.js"></script>
+        <script src="https://apis.google.com/js/api.js" async></script>
         <script src="https://accounts.google.com/gsi/client" async defer></script>
         {emotionStyleTags}
       </Head>

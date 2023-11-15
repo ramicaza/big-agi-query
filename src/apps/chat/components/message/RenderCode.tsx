@@ -26,7 +26,11 @@ const PROJECT_ID = 'symbiosys-prod';
 const PAGE_SIZE = 100;
 
 // TODO: move this to an external hook for cleaner code
-const useAccessTokenStore = create(persist(
+interface AccessTokenStoreState {
+  accessToken: string | null;
+  setAccessToken: (accessToken: string) => void;
+}
+const useAccessTokenStore = create<AccessTokenStoreState>()(persist(
   (set) => ({
     accessToken: null,
     setAccessToken: (accessToken: string) => set({ accessToken }),
@@ -160,11 +164,11 @@ function RenderCodeImpl(props: {
   const tokenClientRef = React.useRef(google.accounts.oauth2.initTokenClient({
     client_id: '361681009781-hns0m7bb5t9s09bb613vvuenr9t8o55a.apps.googleusercontent.com',
     scope: 'https://www.googleapis.com/auth/bigquery',
-    // callback: handleCredentialResponse
+    callback: () => null
   }));
   const tokenClient = tokenClientRef.current;
 
-  const getToken = async (err, isInitial = false) => {
+  const getToken = async (err: any, isInitial = false) => {
     if (isInitial) {
       // spoof error to trigger token request
       err = { result: { error: { code: 401 } } };
@@ -174,6 +178,7 @@ function RenderCodeImpl(props: {
       await new Promise((resolve, reject) => {
         try {
           // Settle this promise in the response callback for requestAccessToken()
+          // @ts-ignore
           tokenClient.callback = (resp) => {
             console.log('tokenClient.callback', resp);
             console.log(resp.error !== undefined)
@@ -235,7 +240,7 @@ function RenderCodeImpl(props: {
       'jobId': jobId,
       'maxResults': PAGE_SIZE,
       'timeoutMs': 180000, // we never want to deal with the job id, almost any query is faster than 3 min
-      'startIndex': startRow,
+      'startIndex': startRow ? '' + startRow : undefined,
     });
 
     const getQueryResultsWithRetry = async (startRow: number | null = null) => {
@@ -261,7 +266,7 @@ function RenderCodeImpl(props: {
       return nextPageResults; // Return the next page of results
     };
     // Execute the initial query and get the first page of results
-    const resp = await queryWithRetry();
+    const resp: any = await queryWithRetry();
     jobId = resp.result.jobReference.jobId;
     location = resp.result.jobReference.location;
 
