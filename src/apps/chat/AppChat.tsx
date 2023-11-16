@@ -41,6 +41,7 @@ export function AppChat() {
   const [clearConfirmationId, setClearConfirmationId] = React.useState<string | null>(null);
   const [deleteConfirmationId, setDeleteConfirmationId] = React.useState<string | null>(null);
   const [flattenConversationId, setFlattenConversationId] = React.useState<string | null>(null);
+  const composerTextAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   // external state
   const { activeConversationId, isConversationEmpty, hasAnyContent, newConversation, duplicateConversation, deleteAllConversations, setMessages, systemPurposeId, setAutoTitle } = useChatStore(state => {
@@ -162,7 +163,10 @@ export function AppChat() {
   const handleFlattenConversation = (conversationId: string) => setFlattenConversationId(conversationId);
 
 
-  useGlobalShortcut('n', true, false, true, () => newConversation());
+  useGlobalShortcut('n', true, false, true, () => {
+    newConversation();
+    composerTextAreaRef.current?.focus();
+  });
 
   const handleClearConversation = (conversationId: string) => setClearConfirmationId(conversationId);
   useGlobalShortcut('x', true, false, true, () => isConversationEmpty || setClearConfirmationId(activeConversationId));
@@ -248,6 +252,7 @@ export function AppChat() {
     <Composer
       conversationId={activeConversationId} messageId={null}
       isDeveloperMode={systemPurposeId === 'Developer'}
+      composerTextAreaRef={composerTextAreaRef}
       onNewMessage={handleComposerNewMessage}
       sx={{
         zIndex: 21, // position: 'sticky', bottom: 0,

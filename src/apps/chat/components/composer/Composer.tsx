@@ -116,6 +116,7 @@ const DrawOptionsButtonDesktop = (props: { onClick: () => void, sx?: SxProps }) 
 export function Composer(props: {
   conversationId: string | null; messageId: string | null;
   isDeveloperMode: boolean;
+  composerTextAreaRef: React.RefObject<HTMLTextAreaElement>;
   onNewMessage: (chatModeId: ChatModeId, conversationId: string, text: string) => void;
   sx?: SxProps;
 }) {
@@ -225,6 +226,8 @@ export function Composer(props: {
       const autoSend = micContinuation && newText.length >= 1 && !!props.conversationId; //&& assistantTyping;
       if (autoSend)
         props.onNewMessage(chatModeId, props.conversationId!, newText);
+      else if (newText)
+        props.composerTextAreaRef.current?.focus();
 
       // set the text (or clear if auto-sent)
       setComposeText(autoSend ? '' : newText);
@@ -467,6 +470,7 @@ export function Composer(props: {
                       ...(isSpeechEnabled && { pr: { md: 5 } }),
                       mb: 0.5,
                     },
+                    ref: props.composerTextAreaRef,
                   },
                 }}
                 sx={{
