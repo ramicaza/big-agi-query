@@ -59,7 +59,7 @@ export interface DMessage {
   sender: 'You' | 'Bot' | string;   // pretty name
   avatar: string | null;            // null, or image url
   typing: boolean;
-  role: 'assistant' | 'system' | 'user';
+  role: 'assistant' | 'system' | 'user' | 'function';
 
   purposeId?: SystemPurposeId;      // only assistant/system
   originLLM?: string;               // only assistant - model that generated this message, goes beyond known models
@@ -68,6 +68,10 @@ export interface DMessage {
 
   created: number;                  // created timestamp
   updated: number | null;           // updated timestamp
+  
+  // TODO: maybe put these in a 'data' field
+  function_call?: { name: string, arguments: object };
+  name?: string; // when role: 'function'
 }
 
 export function createDMessage(role: DMessage['role'], text: string): DMessage {

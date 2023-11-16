@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 
 
-export type ChatModeId = 'immediate' | 'immediate-follow-up' | 'write-user' | 'react' | 'draw-imagine' | 'draw-imagine-plus';
+export type ChatModeId = 'immediate' | 'immediate-follow-up' | 'write-user' | 'react' | 'draw-imagine' | 'draw-imagine-plus' | 'bigquery'
 
 /// Describe the chat modes
 export const ChatModeItems: {
@@ -18,6 +18,10 @@ export const ChatModeItems: {
   'immediate': {
     label: 'Chat',
     description: 'Persona replies',
+  },
+  'bigquery': {
+    label: 'BigQuery',
+    description: 'Writes the biggest of queries'
   },
   'write-user': {
     label: 'Write',

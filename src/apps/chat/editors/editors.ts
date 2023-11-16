@@ -13,6 +13,24 @@ export function createAssistantTypingMessage(conversationId: string, assistantLl
   return assistantMessage.id;
 }
 
+export function createTypingFunction(conversationId: string,
+  assistantLlmLabel: DLLMId | 'prodia' | 'react-...',
+  assistantPurposeId: SystemPurposeId | undefined,
+  role: 'function' | 'assistant',
+  text: string,
+  functionCall?: { name: string, arguments: object },
+  name?: string,
+): string {
+  const assistantMessage: DMessage = createDMessage(role, text);
+  assistantMessage.typing = true;
+  assistantMessage.purposeId = assistantPurposeId;
+  assistantMessage.originLLM = assistantLlmLabel;
+  functionCall && (assistantMessage.function_call = functionCall);
+  name && (assistantMessage.name = name);
+
+  useChatStore.getState().appendMessage(conversationId, assistantMessage);
+  return assistantMessage.id;
+}
 
 export function updatePurposeInHistory(conversationId: string, history: DMessage[], purposeId: SystemPurposeId): DMessage[] {
   const systemMessageIndex = history.findIndex(m => m.role === 'system');

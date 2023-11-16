@@ -4,7 +4,7 @@ export type SystemPurposeId = 'Catalyst' | 'Custom' | 'Designer' | 'Developer' |
 
 export const defaultSystemPurposeId: SystemPurposeId = 'Generic';
 
-import { SymbiosysMessage } from './symb-message';
+import { SymbiosysMessage } from './modules/aifn/bigquery/symb-message';
 
 type SystemPurposeData = {
   title: string;

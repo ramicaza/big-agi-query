@@ -27,7 +27,8 @@ import { TradeConfig, TradeModal } from './trade/TradeModal';
 import { runAssistantUpdatingState } from './editors/chat-stream';
 import { runImageGenerationUpdatingState } from './editors/image-generate';
 import { runReActUpdatingState } from './editors/react-tangent';
-
+import { runBigQueryUpdatingState } from './editors/bigquery-tangent';
+import { useBigQuery } from '~/modules/aifn/bigquery/bigquery';
 
 const SPECIAL_ID_ALL_CHATS = 'all-chats';
 
@@ -60,6 +61,7 @@ export function AppChat() {
       setAutoTitle: state.setAutoTitle,
     };
   }, shallow);
+  const { getTableSchema } = useBigQuery(''); // TODO: move this to a 'ruXUpdatingState'
 
 
   const handleExecuteConversation = async (chatModeId: ChatModeId, conversationId: string, history: DMessage[]) => {
@@ -114,6 +116,11 @@ export function AppChat() {
             text: `${CmdRunProdia[0]} ${imagePrompt}`,
           }));
           return await runImageGenerationUpdatingState(conversationId, imagePrompt);
+        case 'bigquery':
+          if (!lastMessage?.text)
+            break;
+          // TODO: ramicaza think in depth about what this does
+          return await runBigQueryUpdatingState(conversationId, lastMessage.text, chatLLMId, getTableSchema, history, systemPurposeId);
       }
     }
 
@@ -280,7 +287,7 @@ export function AppChat() {
     />}
 
     {/* DataGrid */}
-    {bigQueryResult && <BigQueryTableModal open onClose={()=>setBigQueryResult(null)} data={bigQueryResult} /> }
+    {bigQueryResult && <BigQueryTableModal open onClose={() => setBigQueryResult(null)} data={bigQueryResult} />}
 
     {/* [confirmation] Delete All */}
     {!!deleteConfirmationId && <ConfirmationModal

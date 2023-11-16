@@ -34,8 +34,9 @@ export const openAIModelSchema = z.object({
 export type OpenAIModelSchema = z.infer<typeof openAIModelSchema>;
 
 export const openAIHistorySchema = z.array(z.object({
-  role: z.enum(['assistant', 'system', 'user'/*, 'function'*/]),
+  role: z.enum(['assistant', 'system', 'user', 'function']),
   content: z.string(),
+  name: z.string().optional(),
 }));
 export type OpenAIHistorySchema = z.infer<typeof openAIHistorySchema>;
 
