@@ -133,8 +133,9 @@ async function streamAssistantMessage(
 
     // const messages = history.map(({ role, text }) => ({ role, content: text })); // root repo converts DMessage to VChatMessageIn
 
+    let res = undefined;
     try {
-        return await streamChat(llmId, messages, abortSignal,
+        res = await streamChat(llmId, messages, abortSignal,
             (updatedMessage: Partial<DMessage>) => {
                 // update the message in the store (and thus schedule a re-render)
                 editMessage(updatedMessage);
@@ -171,4 +172,5 @@ async function streamAssistantMessage(
 
     // finally, stop the typing animation
     editMessage({ typing: false });
+    return res;
 }
