@@ -66,12 +66,12 @@ export async function runBigQueryUpdatingState(
         console.log('model INPUT:', JSON.parse(JSON.stringify(messages)));
         const assistantMessageId = createAssistantTypingMessage(conversationId, assistantLlmId, undefined, '...');
         let wroteText = false;
-        const result = await streamAssistantMessage(assistantLlmId, messages, controller.signal,
-            // (updatedMessage) => console.log('updatedMessage', updatedMessage)
+        const result = await streamAssistantMessage(assistantLlmId, messages, 'off',
             (updatedMessage) => {
                 editMessage(conversationId, assistantMessageId, updatedMessage, false);
                 if (updatedMessage?.text) wroteText = true;
             },
+            controller.signal,
             [func]
         );
         startTyping(conversationId, null);
@@ -116,45 +116,59 @@ export async function runBigQueryUpdatingState(
 
 import { speakText } from '~/modules/elevenlabs/elevenlabs.client';
 import { streamChat } from '~/modules/llms/transports/streamChat';
-import { useElevenlabsStore } from '~/modules/elevenlabs/store-elevenlabs';
+import { ChatAutoSpeakType, getChatAutoAI } from '../store-app-chat';
 
 async function streamAssistantMessage(
     llmId: DLLMId,
     messages: VChatMessageIn[],
-    abortSignal: AbortSignal,
+    autoSpeak: ChatAutoSpeakType,
     editMessage: (updatedMessage: Partial<DMessage>) => void,
+    abortSignal: AbortSignal,
     functions?: VChatFunctionIn[],
 ): Promise<void | OpenAIWire.ChatCompletion.ResponseFunctionCall> {
 
-    // 📢 TTS: speak the first line, if configured
-    const speakFirstLine = useElevenlabsStore.getState().elevenLabsAutoSpeak === 'firstLine';
-    let firstLineSpoken = false;
+    // speak once
+    let spokenText = '';
+    let spokenLine = false;
+
+    // const messages = history.map(({ role, text }) => ({ role, content: text })); // root repo converts DMessage to VChatMessageIn
 
     try {
-        return await streamChat(llmId, messages, abortSignal, (updatedMessage: Partial<DMessage>) => {
-            // update the message in the store (and thus schedule a re-render)
-            editMessage(updatedMessage);
+        return await streamChat(llmId, messages, abortSignal,
+            (updatedMessage: Partial<DMessage>) => {
+                // update the message in the store (and thus schedule a re-render)
+                editMessage(updatedMessage);
 
-            // 📢 TTS
-            if (updatedMessage?.text && speakFirstLine && !firstLineSpoken) {
-                let cutPoint = updatedMessage.text.lastIndexOf('\n');
-                if (cutPoint < 0)
-                    cutPoint = updatedMessage.text.lastIndexOf('. ');
-                if (cutPoint > 100 && cutPoint < 400) {
-                    firstLineSpoken = true;
-                    const firstParagraph = updatedMessage.text.substring(0, cutPoint);
-                    // fire/forget: we don't want to stall this loop
-                    void speakText(firstParagraph);
+                // 📢 TTS: first-line
+                if (updatedMessage?.text) {
+                    spokenText = updatedMessage.text;
+                    if (autoSpeak === 'firstLine' && !spokenLine) {
+                        let cutPoint = spokenText.lastIndexOf('\n');
+                        if (cutPoint < 0)
+                            cutPoint = spokenText.lastIndexOf('. ');
+                        if (cutPoint > 100 && cutPoint < 400) {
+                            spokenLine = true;
+                            const firstParagraph = spokenText.substring(0, cutPoint);
+
+                            // fire/forget: we don't want to stall this loop
+                            void speakText(firstParagraph);
+                        }
+                    }
                 }
-            }
-        }, functions);
+            },
+            functions
+        );
     } catch (error: any) {
         if (error?.name !== 'AbortError') {
             console.error('Fetch request error:', error);
             // TODO: show an error to the UI?
         }
-    } finally {
-        // finally, stop the typing animation
-        editMessage({ typing: false });
     }
+
+    // 📢 TTS: all
+    if ((autoSpeak === 'all' || autoSpeak === 'firstLine') && spokenText && !spokenLine && !abortSignal.aborted)
+        void speakText(spokenText);
+
+    // finally, stop the typing animation
+    editMessage({ typing: false });
 }
