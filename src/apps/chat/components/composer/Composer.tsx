@@ -43,6 +43,7 @@ import { TokenBadge } from './TokenBadge';
 import { TokenProgressbar } from './TokenProgressbar';
 
 
+export const DEFAULT_CHAT_MODE_ID: ChatModeId = 'immediate';
 /// Text template helpers
 
 const PromptTemplates = {
@@ -118,6 +119,7 @@ export function Composer(props: {
   isDeveloperMode: boolean;
   composerTextAreaRef: React.RefObject<HTMLTextAreaElement>;
   onNewMessage: (chatModeId: ChatModeId, conversationId: string, text: string) => void;
+  setChatModeIdExternal: (chatModeId: ChatModeId) => void;
   sx?: SxProps;
 }) {
   // state
@@ -131,7 +133,7 @@ export function Composer(props: {
 
   // external state
   const isMobile = useIsMobile();
-  const [chatModeId, setChatModeId] = React.useState<ChatModeId>('immediate');
+  const [chatModeId, setChatModeId] = React.useState<ChatModeId>(DEFAULT_CHAT_MODE_ID);
   const [startupText, setStartupText] = useComposerStartupText();
   const [enterIsNewline, experimentalLabs] = useUIPreferencesStore(state => [state.enterIsNewline, state.experimentalLabs], shallow);
   const { assistantTyping, systemPurposeId, tokenCount: conversationTokenCount, stopTyping } = useChatStore(state => {

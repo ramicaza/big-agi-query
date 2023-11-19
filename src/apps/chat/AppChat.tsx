@@ -20,7 +20,7 @@ import { ChatMenuItems } from './components/applayout/ChatMenuItems';
 import { ChatMessageList } from './components/ChatMessageList';
 import { ChatModeId } from './components/composer/store-composer';
 import { CmdAddRoleMessage, extractCommands } from './commands';
-import { Composer } from './components/composer/Composer';
+import { Composer, DEFAULT_CHAT_MODE_ID } from './components/composer/Composer';
 import { Ephemerals } from './components/Ephemerals';
 
 import { TradeConfig, TradeModal } from './trade/TradeModal';
@@ -132,8 +132,9 @@ export function AppChat() {
   const _findConversation = (conversationId: string) =>
     conversationId ? useChatStore.getState().conversations.find(c => c.id === conversationId) ?? null : null;
 
+  const [chatModeId, setChatModeId] = React.useState<ChatModeId>(DEFAULT_CHAT_MODE_ID);
   const handleExecuteChatHistory = async (conversationId: string, history: DMessage[]) =>
-    await handleExecuteConversation('immediate', conversationId, history);
+    await handleExecuteConversation(chatModeId, conversationId, history);
 
   const handleDiagramFromText = async (diagramConfig: DiagramConfig | null) => setDiagramConfig(diagramConfig);
 
@@ -261,6 +262,7 @@ export function AppChat() {
       isDeveloperMode={systemPurposeId === 'Developer'}
       composerTextAreaRef={composerTextAreaRef}
       onNewMessage={handleComposerNewMessage}
+      setChatModeIdExternal={setChatModeId}
       sx={{
         zIndex: 21, // position: 'sticky', bottom: 0,
         backgroundColor: 'background.surface',
