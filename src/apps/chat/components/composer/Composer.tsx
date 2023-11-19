@@ -43,7 +43,7 @@ import { TokenBadge } from './TokenBadge';
 import { TokenProgressbar } from './TokenProgressbar';
 
 
-export const DEFAULT_CHAT_MODE_ID: ChatModeId = 'immediate';
+export const DEFAULT_CHAT_MODE_ID: ChatModeId = 'bigquery';
 /// Text template helpers
 
 const PromptTemplates = {
@@ -413,6 +413,7 @@ export function Composer(props: {
   const isReAct = chatModeId === 'react';
   const isDraw = chatModeId === 'draw-imagine';
   const isDrawPlus = chatModeId === 'draw-imagine-plus';
+  const isBigQuery = chatModeId === 'bigquery';
 
   const textPlaceholder: string =
     isDrawPlus
@@ -587,7 +588,7 @@ export function Composer(props: {
                       endDecorator={micIsContinuing ? <AutoModeIcon /> : isWriteUser ? <SendIcon sx={{ fontSize: 18 }} /> : isReAct ? <PsychologyIcon /> : <TelegramIcon />}
                     >
                       {micIsContinuing && 'Voice '}
-                      {isWriteUser ? 'Write' : isFollowUp ? 'Chat+' : isReAct ? 'ReAct' : isDraw ? 'Draw' : isDrawPlus ? 'Draw+' : 'Chat'}
+                      {isWriteUser ? 'Write' : isFollowUp ? 'Chat+' : isReAct ? 'ReAct' : isDraw ? 'Draw' : isDrawPlus ? 'Draw+' : isBigQuery ? 'BigQuery' : 'Chat'}
                     </Button>
                     <IconButton disabled={!props.conversationId || !chatLLM || !!chatModeMenuAnchor} onClick={handleToggleChatMode}>
                       <ExpandLessIcon />

@@ -23,22 +23,6 @@ import { persist } from 'zustand/middleware';
 
 import { useBigQuery } from '~/modules/aifn/bigquery/bigquery';
 
-// TODO: move this to an external hook for cleaner code
-interface AccessTokenStoreState {
-  accessToken: string | null;
-  setAccessToken: (accessToken: string) => void;
-}
-const useAccessTokenStore = create<AccessTokenStoreState>()(persist(
-  (set) => ({
-    accessToken: null,
-    setAccessToken: (accessToken: string) => set({ accessToken }),
-  }),
-  {
-    name: 'access-token-storage', // unique name for localStorage key
-    getStorage: () => localStorage, // define localStorage as the storage provider
-  }
-));
-
 export const overlayButtonsSx: SxProps = {
   position: 'absolute', top: 0, right: 0, zIndex: 10,
   display: 'flex', flexDirection: 'row', gap: 1,
