@@ -10,7 +10,7 @@ import SchemaIcon from '@mui/icons-material/Schema';
 import ShapeLineOutlinedIcon from '@mui/icons-material/ShapeLineOutlined';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
-import { copyToClipboard } from '~/common/util/copyToClipboard';
+import { copyToClipboard } from '~/common/util/clipboardUtils';
 
 import { CodeBlock } from './blocks';
 import { OpenInCodepen } from './OpenInCodepen';

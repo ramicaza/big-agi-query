@@ -95,8 +95,7 @@ export function AppChat() {
     if (chatLLMId && systemPurposeId) {
       switch (chatModeId) {
         case 'immediate':
-        case 'immediate-follow-up':
-          return await runAssistantUpdatingState(conversationId, history, chatLLMId, systemPurposeId, true, chatModeId === 'immediate-follow-up');
+          return await runAssistantUpdatingState(conversationId, history, chatLLMId, systemPurposeId);
         case 'write-user':
           return setMessages(conversationId, history);
         case 'react':
@@ -176,6 +175,9 @@ export function AppChat() {
     composerTextAreaRef.current?.focus();
   });
 
+  const handleCloneConversation = (conversationId: string) => duplicateConversation(conversationId);
+  useGlobalShortcut('f', true, false, true, () => isConversationEmpty || activeConversationId && handleCloneConversation(activeConversationId));
+
   const handleClearConversation = (conversationId: string) => setClearConfirmationId(conversationId);
   useGlobalShortcut('x', true, false, true, () => isConversationEmpty || setClearConfirmationId(activeConversationId));
 
@@ -198,6 +200,7 @@ export function AppChat() {
       setDeleteConfirmationId(null);
     }
   };
+  useGlobalShortcut('d', true, false, true, () => isConversationEmpty || setDeleteConfirmationId(activeConversationId));
 
 
   // Pluggable ApplicationBar components
