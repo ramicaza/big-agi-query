@@ -5,7 +5,7 @@ import { findVendorForLlmOrThrow } from '../vendors/vendor.registry';
 
 export interface VChatMessageIn {
   role: 'assistant' | 'system' | 'user' | 'function';
-  content: string | null;
+  content: string;
   name?: string; // when role: 'function'
   function_call?: { name: string, arguments: object };
 }
