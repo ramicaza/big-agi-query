@@ -25,7 +25,7 @@ export const RenderSchema = ({ schema }: { schema: Schema }) => {
       <Box className={`schema-body ${theme.palette.mode === 'dark' ? 'schema-body-dark' : 'schema-body-light'}`}>
         <Typography level="title-md">Failed to fetch schema</Typography>
         <Typography level="body-sm">
-          LLM might have requested an schema that doesn't exist or was deleted
+          LLM might have requested a schema that doesn&apos;t exist or was deleted
         </Typography>
       </Box>
     );

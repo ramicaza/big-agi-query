@@ -36,5 +36,5 @@ export const ShortcutsModal = (props: { onClose: () => void }) =>
     open title='Desktop Shortcuts' 
     onClose={props.onClose}
   >
-    <ChatMessage message={shortcutsMessage} hideAvatars noBottomBorder sx={{ p: 0, m: 0 }} />
+    <ChatMessage message={shortcutsMessage} hideAvatars noBottomBorder sx={{ p: 0, m: 0 }} setBigQueryResult={() => null} />
   </GoodModal>;
