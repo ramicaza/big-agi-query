@@ -41,7 +41,9 @@ import { RenderLatex } from './RenderLatex';
 import { RenderMarkdown } from './RenderMarkdown';
 import { RenderText } from './RenderText';
 import { RenderTextDiff } from './RenderTextDiff';
+import { RenderSchema } from './RenderSchema';
 import { parseBlocks } from './blocks';
+import SchemaIcon from '@mui/icons-material/Schema';
 
 
 // How long is the user collapsed message
@@ -62,6 +64,8 @@ export function messageBackground(messageRole: DMessage['role'] | string, wasEdi
       return unknownAssistantIssue ? 'danger.softBg' : 'background.surface';
     case 'system':
       return wasEdited ? 'warning.softHoverBg' : 'background.surface';
+    case 'function':
+      return 'background.surface';
     default:
       return '#ff0000';
   }
@@ -108,6 +112,8 @@ export function makeAvatar(messageAvatar: string | null, messageRole: DMessage['
 
     case 'user':
       return <Face6Icon sx={iconSx} />;            // https://www.svgrepo.com/show/306500/openai.svg
+    case 'function':
+      return <SchemaIcon sx={iconSx} />;
   }
   return <Avatar alt={messageSender} />;
 }
@@ -240,7 +246,7 @@ export function ChatMessage(props: {
     updated: messageUpdated,
   } = props.message;
 
-  const fromAssistant = messageRole === 'assistant';
+  const fromAssistant = messageRole === 'assistant' || messageRole === 'function';
   const fromSystem = messageRole === 'system';
   const fromUser = messageRole === 'user';
   const wasEdited = !!messageUpdated;
@@ -506,9 +512,11 @@ export function ChatMessage(props: {
                         ? <RenderLatex key={'latex-' + index} latexBlock={block} />
                         : block.type === 'diff'
                           ? <RenderTextDiff key={'latex-' + index} diffBlock={block} />
-                          : (renderMarkdown && props.noMarkdown !== true && !fromSystem)
-                            ? <RenderMarkdown key={'text-md-' + index} textBlock={block} />
-                            : <RenderText key={'text-' + index} textBlock={block} />)}
+                          : props.message.role === 'function'
+                            ? <RenderSchema key={'schema-' + index} schema={JSON.parse(block.content)} />
+                            : (renderMarkdown && props.noMarkdown !== true && !fromSystem)
+                              ? <RenderMarkdown key={'text-md-' + index} textBlock={block} />
+                              : <RenderText key={'text-' + index} textBlock={block} />)}
 
           {isCollapsed && (
             <Button variant='plain' color='neutral' onClick={handleUncollapse}>... expand ...</Button>
