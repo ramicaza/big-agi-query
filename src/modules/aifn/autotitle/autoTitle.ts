@@ -21,7 +21,7 @@ export function autoTitle(conversationId: string) {
   // first line of the last 5 messages
   const historyLines: string[] = conversation.messages.filter(m => m.role !== 'system').slice(-5).map(m => {
     let text = m.text.split('\n')[0];
-    text = text.length > 50 ? text.substring(0, 50) + '...' : text;
+    text = text.length > 100 ? text.substring(0, 100) + '...' : text;
     text = `${m.role === 'user' ? 'You' : 'Assistant'}: ${text}`;
     return `- ${text}`;
   });
@@ -34,7 +34,7 @@ export function autoTitle(conversationId: string) {
         'Analyze the given short conversation (every line is truncated) and extract a concise chat title that ' +
         'summarizes the conversation in as little as a couple of words.\n' +
         'Only respond with the lowercase short title and nothing else.\n' +
-        'DO NOT write a lazy title like "schema obtained" or "schema extraction".\n' +
+        'Focus primarily on the initial user question when naming.\n' +
         '\n' +
         '```\n' +
         historyLines.join('\n') +
