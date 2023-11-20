@@ -34,6 +34,7 @@ export function autoTitle(conversationId: string) {
         'Analyze the given short conversation (every line is truncated) and extract a concise chat title that ' +
         'summarizes the conversation in as little as a couple of words.\n' +
         'Only respond with the lowercase short title and nothing else.\n' +
+        'DO NOT write a lazy title like "schema obtained" or "schema extraction".\n' +
         '\n' +
         '```\n' +
         historyLines.join('\n') +
