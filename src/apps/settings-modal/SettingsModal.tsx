@@ -2,22 +2,21 @@ import * as React from 'react';
 
 import { Accordion, AccordionDetails, accordionDetailsClasses, AccordionGroup, AccordionSummary, accordionSummaryClasses, Avatar, Button, Divider, ListItemContent, Stack, styled, Tab, tabClasses, TabList, TabPanel, Tabs } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
-import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import ScienceIcon from '@mui/icons-material/Science';
 import SearchIcon from '@mui/icons-material/Search';
-import TelegramIcon from '@mui/icons-material/Telegram';
 
 import { ElevenlabsSettings } from '~/modules/elevenlabs/ElevenlabsSettings';
 import { GoogleSearchSettings } from '~/modules/google/GoogleSearchSettings';
 import { ProdiaSettings } from '~/modules/prodia/ProdiaSettings';
 
 import { GoodModal } from '~/common/components/GoodModal';
-import { closeLayoutPreferences, openLayoutModelsSetup, openLayoutPreferences, useLayoutPreferencesTab } from '~/common/layout/store-applayout';
+import { closeLayoutPreferences, useLayoutPreferencesTab } from '~/common/layout/store-applayout';
 import { settingsGap } from '~/common/app.theme';
-import { useGlobalShortcut } from '~/common/components/useGlobalShortcut';
+import { useIsMobile } from '~/common/components/useMatchMedia';
 
 import { AppChatSettingsAI } from './AppChatSettingsAI';
 import { AppChatSettingsUI } from './AppChatSettingsUI';
+import { ShortcutsModal } from './ShortcutsModal';
 import { UxLabsSettings } from './UxLabsSettings';
 import { VoiceSettings } from './VoiceSettings';
 
@@ -44,14 +43,17 @@ const Topics = styled(AccordionGroup)(({ theme }) => ({
   },
 }));
 
-function Topic(props: { title: string, icon?: string | React.ReactNode, startCollapsed?: boolean, children?: React.ReactNode }) {
+function Topic(props: { title?: string, icon?: string | React.ReactNode, startCollapsed?: boolean, children?: React.ReactNode }) {
 
   // state
   const [expanded, setExpanded] = React.useState(props.startCollapsed !== true);
 
+  // derived state
+  const hideTitleBar = !props.title && !props.icon;
+
   return (
     <Accordion
-      expanded={expanded}
+      expanded={expanded || hideTitleBar}
       onChange={(_event, expanded) => setExpanded(expanded)}
       sx={{
         '&:not(:last-child)': {
@@ -63,23 +65,25 @@ function Topic(props: { title: string, icon?: string | React.ReactNode, startCol
       }}
     >
 
-      <AccordionSummary
-        color='primary'
-        variant={expanded ? 'plain' : 'soft'}
-        indicator={<AddIcon />}
-      >
-        {!!props.icon && (
-          <Avatar
-            color='primary'
-            variant={expanded ? 'soft' : 'plain'}
-          >
-            {props.icon}
-          </Avatar>
-        )}
-        <ListItemContent>
-          {props.title}
-        </ListItemContent>
-      </AccordionSummary>
+      {!hideTitleBar && (
+        <AccordionSummary
+          color='primary'
+          variant={expanded ? 'plain' : 'soft'}
+          indicator={<AddIcon />}
+        >
+          {!!props.icon && (
+            <Avatar
+              color='primary'
+              variant={expanded ? 'soft' : 'plain'}
+            >
+              {props.icon}
+            </Avatar>
+          )}
+          <ListItemContent>
+            {props.title}
+          </ListItemContent>
+        </AccordionSummary>
+      )}
 
       <AccordionDetails>
         <Stack sx={{ gap: settingsGap, border: 'none' }}>
@@ -98,9 +102,12 @@ function Topic(props: { title: string, icon?: string | React.ReactNode, startCol
  */
 export function SettingsModal() {
 
+  // state
+  const [showShortcuts, setShowShortcuts] = React.useState<boolean>(false);
+
   // external state
+  const isMobile = useIsMobile();
   const settingsTabIndex = useLayoutPreferencesTab();
-  useGlobalShortcut('p', true, true, false, openLayoutPreferences);
 
   const tabFixSx = { fontFamily: 'body', flex: 1, p: 0, m: 0 };
 
@@ -108,13 +115,11 @@ export function SettingsModal() {
     <GoodModal
       title='Preferences' strongerTitle
       open={!!settingsTabIndex} onClose={closeLayoutPreferences}
-      startButton={
-        <Button variant='soft' color='success' onClick={openLayoutModelsSetup} startDecorator={<BuildCircleIcon />} sx={{
-          '--Icon-fontSize': 'var(--joy-fontSize-xl2)',
-        }}>
-          Models
+      startButton={isMobile ? undefined : (
+        <Button variant='soft' onClick={() => setShowShortcuts(true)}>
+          👉 See Shortcuts
         </Button>
-      }
+      )}
       sx={{
         '--Card-padding': { xs: '8px', sm: '16px', lg: '24px' },
       }}
@@ -143,7 +148,7 @@ export function SettingsModal() {
             },
           }}
         >
-          <Tab disableIndicator value={1} sx={tabFixSx}>UX</Tab>
+          <Tab disableIndicator value={1} sx={tabFixSx}>Chat</Tab>
           <Tab disableIndicator value={3} sx={tabFixSx}>Voice</Tab>
           <Tab disableIndicator value={2} sx={tabFixSx}>Draw</Tab>
           <Tab disableIndicator value={4} sx={tabFixSx}>Tools</Tab>
@@ -151,7 +156,7 @@ export function SettingsModal() {
 
         <TabPanel value={1} sx={{ p: 'var(--Tabs-gap)' }}>
           <Topics>
-            <Topic icon={<TelegramIcon />} title='User Interface'>
+            <Topic>
               <AppChatSettingsUI />
             </Topic>
             <Topic icon='🧠' title='Chat AI' startCollapsed>
@@ -193,6 +198,8 @@ export function SettingsModal() {
       </Tabs>
 
       <Divider />
+
+      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
 
     </GoodModal>
   );
