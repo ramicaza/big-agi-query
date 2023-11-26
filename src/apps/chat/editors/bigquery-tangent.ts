@@ -54,7 +54,7 @@ export async function runBigQueryUpdatingState(
     systemPurpose: SystemPurposeId,
 ) {
     // update the system message from the active Purpose, if not manually edited
-    history = updatePurposeInHistory(conversationId, history, systemPurpose);
+    history = updatePurposeInHistory(conversationId, history, assistantLlmId, systemPurpose);
 
     const { startTyping, editMessage, deleteMessage } = useChatStore.getState();
 
