@@ -201,7 +201,7 @@ export function AppChat() {
 
   const [chatModeId, setChatModeId] = React.useState<ChatModeId>(DEFAULT_CHAT_MODE_ID);
   const handleConversationExecuteHistory = async (conversationId: DConversationId, history: DMessage[]) =>
-    await _handleExecute('immediate', conversationId, history);
+    await _handleExecute(chatModeId, conversationId, history);
 
   const handleMessageRegenerateLast = React.useCallback(async () => {
     const focusedConversation = getConversation(focusedConversationId);
