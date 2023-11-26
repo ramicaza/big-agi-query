@@ -5,18 +5,18 @@ import AddIcon from '@mui/icons-material/Add';
 import ScienceIcon from '@mui/icons-material/Science';
 import SearchIcon from '@mui/icons-material/Search';
 
+import { BrowseSettings } from '~/modules/browse/BrowseSettings';
 import { ElevenlabsSettings } from '~/modules/elevenlabs/ElevenlabsSettings';
 import { GoogleSearchSettings } from '~/modules/google/GoogleSearchSettings';
 import { ProdiaSettings } from '~/modules/prodia/ProdiaSettings';
 
 import { GoodModal } from '~/common/components/GoodModal';
-import { closeLayoutPreferences, useLayoutPreferencesTab } from '~/common/layout/store-applayout';
+import { closeLayoutPreferences, openLayoutShortcuts, useLayoutPreferencesTab } from '~/common/layout/store-applayout';
 import { settingsGap } from '~/common/app.theme';
 import { useIsMobile } from '~/common/components/useMatchMedia';
 
 import { AppChatSettingsAI } from './AppChatSettingsAI';
 import { AppChatSettingsUI } from './AppChatSettingsUI';
-import { ShortcutsModal } from './ShortcutsModal';
 import { UxLabsSettings } from './UxLabsSettings';
 import { VoiceSettings } from './VoiceSettings';
 
@@ -102,9 +102,6 @@ function Topic(props: { title?: string, icon?: string | React.ReactNode, startCo
  */
 export function SettingsModal() {
 
-  // state
-  const [showShortcuts, setShowShortcuts] = React.useState<boolean>(false);
-
   // external state
   const isMobile = useIsMobile();
   const settingsTabIndex = useLayoutPreferencesTab();
@@ -116,7 +113,7 @@ export function SettingsModal() {
       title='Preferences' strongerTitle
       open={!!settingsTabIndex} onClose={closeLayoutPreferences}
       startButton={isMobile ? undefined : (
-        <Button variant='soft' onClick={() => setShowShortcuts(true)}>
+        <Button variant='soft' onClick={openLayoutShortcuts}>
           👉 See Shortcuts
         </Button>
       )}
@@ -189,7 +186,10 @@ export function SettingsModal() {
 
         <TabPanel value={4} sx={{ p: 'var(--Tabs-gap)' }}>
           <Topics>
-            <Topic icon={<SearchIcon />} title='Google Search API'>
+            <Topic icon={<SearchIcon />} title='Browsing' startCollapsed>
+              <BrowseSettings />
+            </Topic>
+            <Topic icon={<SearchIcon />} title='Google Search API' startCollapsed>
               <GoogleSearchSettings />
             </Topic>
             {/*<Topic icon='🛠' title='Other tools...' />*/}
@@ -198,8 +198,6 @@ export function SettingsModal() {
       </Tabs>
 
       <Divider />
-
-      {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
 
     </GoodModal>
   );

@@ -10,17 +10,20 @@ import { DConversationId, useChatStore } from '~/common/state/store-chats';
 import { OpenAIIcon } from '~/common/components/icons/OpenAIIcon';
 import { closeLayoutDrawer } from '~/common/layout/store-applayout';
 import { useUIPreferencesStore } from '~/common/state/store-ui';
+import { useUXLabsStore } from '~/common/state/store-ux-labs';
 
-import { ConversationItem } from './ConversationItem';
+import { ChatNavigationItemMemo } from './ChatNavigationItem';
 
 
-type ListGrouping = 'off' | 'persona';
+// type ListGrouping = 'off' | 'persona';
 
-export function ChatDrawerItems(props: {
-  conversationId: DConversationId | null,
+export const ChatDrawerItemsMemo = React.memo(ChatDrawerItems);
+
+function ChatDrawerItems(props: {
+  activeConversationId: DConversationId | null,
   disableNewButton: boolean,
   onConversationActivate: (conversationId: DConversationId) => void,
-  onConversationDelete: (conversationId: DConversationId) => void,
+  onConversationDelete: (conversationId: DConversationId, bypassConfirmation: boolean) => void,
   onConversationImportDialog: () => void,
   onConversationNew: () => void,
   onConversationsDeleteAll: () => void,
@@ -28,17 +31,16 @@ export function ChatDrawerItems(props: {
 
   // local state
   const { onConversationDelete, onConversationNew, onConversationActivate } = props;
-  const [grouping] = React.useState<ListGrouping>('off');
+  // const [grouping] = React.useState<ListGrouping>('off');
 
   // external state
-  const { conversationIDs, maxChatMessages } = useChatStore(state => ({
-    conversationIDs: state.conversations.map(_c => _c.id),
-    maxChatMessages: state.conversations.reduce((longest, _c) => Math.max(longest, _c.messages.length), 0),
-  }), shallow);
-  const [experimentalLabs, showSymbols] = useUIPreferencesStore(state => [state.experimentalLabs, state.zenMode !== 'cleaner'], shallow);
+  const conversations = useChatStore(state => state.conversations, shallow);
+  const showSymbols = useUIPreferencesStore(state => state.zenMode !== 'cleaner');
+  const labsEnhancedUI = useUXLabsStore(state => state.labsEnhancedUI);
 
   // derived state
-  const totalConversations = conversationIDs.length;
+  const maxChatMessages = conversations.reduce((longest, _c) => Math.max(longest, _c.messages.length), 1);
+  const totalConversations = conversations.length;
   const hasChats = totalConversations > 0;
   const singleChat = totalConversations === 1;
   const softMaxReached = totalConversations >= 50;
@@ -56,12 +58,12 @@ export function ChatDrawerItems(props: {
   }, [onConversationActivate]);
 
   const handleConversationDelete = React.useCallback((conversationId: DConversationId) => {
-    !singleChat && conversationId && onConversationDelete(conversationId);
+    !singleChat && conversationId && onConversationDelete(conversationId, true);
   }, [onConversationDelete, singleChat]);
 
 
   // grouping
-  let sortedIds = conversationIDs;
+  /*let sortedIds = conversationIDs;
   if (grouping === 'persona') {
     const conversations = useChatStore.getState().conversations;
 
@@ -78,7 +80,7 @@ export function ChatDrawerItems(props: {
 
     // flatten grouped conversations
     sortedIds = Object.values(groupedConversations).flat();
-  }
+  }*/
 
   return <>
 
@@ -113,13 +115,13 @@ export function ChatDrawerItems(props: {
       {/*  </ToggleButtonGroup>*/}
       {/*</ListItem>*/}
 
-      {sortedIds.map(conversationId =>
-        <ConversationItem
-          key={'c-id-' + conversationId}
-          conversationId={conversationId}
-          isActive={conversationId === props.conversationId}
+      {conversations.map(conversation =>
+        <ChatNavigationItemMemo
+          key={'nav-' + conversation.id}
+          conversation={conversation}
+          isActive={conversation.id === props.activeConversationId}
           isLonely={singleChat}
-          maxChatMessages={(experimentalLabs || softMaxReached) ? maxChatMessages : 0}
+          maxChatMessages={(labsEnhancedUI || softMaxReached) ? maxChatMessages : 0}
           showSymbols={showSymbols}
           onConversationActivate={handleConversationActivate}
           onConversationDelete={handleConversationDelete}
@@ -142,18 +144,6 @@ export function ChatDrawerItems(props: {
         Delete {totalConversations >= 2 ? `all ${totalConversations} chats` : 'chat'}
       </Typography>
     </MenuItem>
-
-    {/*<ListItem>*/}
-    {/*  <Typography level='body-sm'>*/}
-    {/*    Scratchpad*/}
-    {/*  </Typography>*/}
-    {/*</ListItem>*/}
-    {/*<MenuItem>*/}
-    {/*  <ListItemDecorator />*/}
-    {/*  <Typography sx={{ opacity: 0.5 }}>*/}
-    {/*    Feature <Link href={`${Brand.URIs.OpenRepo}/issues/17`} target='_blank'>#17</Link>*/}
-    {/*  </Typography>*/}
-    {/*</MenuItem>*/}
 
   </>;
 }

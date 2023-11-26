@@ -1,7 +1,9 @@
 import * as React from 'react';
 
+import { Box } from '@mui/joy';
 import ForkRightIcon from '@mui/icons-material/ForkRight';
 
+import { CmdRunBrowse } from '~/modules/browse/browse.client';
 import { CmdRunProdia } from '~/modules/prodia/prodia.client';
 import { CmdRunReact } from '~/modules/aifn/react/react';
 import { DiagramConfig, DiagramsModal } from '~/modules/aifn/digrams/DiagramsModal';
@@ -9,6 +11,7 @@ import { FlattenerModal } from '~/modules/aifn/flatten/FlattenerModal';
 import { TradeConfig, TradeModal } from '~/modules/trade/TradeModal';
 import { imaginePromptFromText } from '~/modules/aifn/imagine/imaginePromptFromText';
 import { speakText } from '~/modules/elevenlabs/elevenlabs.client';
+import { useBrowseStore } from '~/modules/browse/store-module-browsing';
 import { useModelsStore } from '~/modules/llms/store-llms';
 
 import { ConfirmationModal } from '~/common/components/ConfirmationModal';
@@ -18,19 +21,21 @@ import { addSnackbar, removeSnackbar } from '~/common/components/useSnackbarsSto
 import { createDMessage, DConversationId, DMessage, getConversation, useConversation } from '~/common/state/store-chats';
 import { GlobalShortcutItem, ShortcutKeyName, useGlobalShortcuts } from '~/common/components/useGlobalShortcut';
 import { useLayoutPluggable } from '~/common/layout/store-applayout';
+import { useUXLabsStore } from '~/common/state/store-ux-labs';
 
-import { ChatDrawerItems } from './components/applayout/ChatDrawerItems';
+import { ChatDrawerItemsMemo } from './components/applayout/ChatDrawerItems';
 import { ChatDropdowns } from './components/applayout/ChatDropdowns';
 import { ChatMenuItems } from './components/applayout/ChatMenuItems';
 import { ChatMessageList } from './components/ChatMessageList';
-import { CmdAddRoleMessage, extractCommands } from './editors/commands';
+import { CmdAddRoleMessage, CmdHelp, createCommandsHelpMessage, extractCommands } from './editors/commands';
 import { Composer, DEFAULT_CHAT_MODE_ID } from './components/composer/Composer';
 import { Ephemerals } from './components/Ephemerals';
+import { usePanesManager } from './components/usePanesManager';
 
 import { runAssistantUpdatingState } from './editors/chat-stream';
+import { runBrowseUpdatingState } from './editors/browse-load';
 import { runImageGenerationUpdatingState } from './editors/image-generate';
 import { runReActUpdatingState } from './editors/react-tangent';
-import { usePanesManager } from './components/usePanesManager';
 
 import { runBigQueryUpdatingState } from './editors/bigquery-tangent';
 import { useBigQuery } from '~/modules/aifn/bigquery/bigquery';
@@ -56,10 +61,18 @@ export function AppChat() {
   const composerTextAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   // external state
-  const { focusedChatPane, openConversationInFocusedPane, navigateHistoryInFocusedPane } = usePanesManager();
-  const focusedConversationId = focusedChatPane?.conversationId ?? null;
+  const {
+    chatPanes,
+    focusedConversationId,
+    navigateHistoryInFocusedPane,
+    openConversationInFocusedPane,
+    openConversationInSplitPane,
+    setFocusedPaneIndex,
+  } = usePanesManager();
+
   const {
     title: focusedChatTitle,
+    chatIdx: focusedChatNumber,
     isChatEmpty: isFocusedChatEmpty,
     areChatsEmpty,
     newConversationId,
@@ -75,9 +88,19 @@ export function AppChat() {
 
   // Window actions
 
+  const chatPaneIDs = chatPanes.length > 0 ? chatPanes.map(pane => pane.conversationId) : [null];
+
+  const setActivePaneIndex = React.useCallback((idx: number) => {
+    setFocusedPaneIndex(idx);
+  }, [setFocusedPaneIndex]);
+
   const setFocusedConversationId = React.useCallback((conversationId: DConversationId | null) => {
     conversationId && openConversationInFocusedPane(conversationId);
   }, [openConversationInFocusedPane]);
+
+  const openSplitConversationId = React.useCallback((conversationId: DConversationId | null) => {
+    conversationId && openConversationInSplitPane(conversationId);
+  }, [openConversationInSplitPane]);
 
   const handleNavigateHistory = React.useCallback((direction: 'back' | 'forward') => {
     if (navigateHistoryInFocusedPane(direction))
@@ -87,10 +110,11 @@ export function AppChat() {
   React.useEffect(() => {
     if (showNextTitle.current) {
       showNextTitle.current = false;
-      const id = addSnackbar({ key: 'focused-title', message: focusedChatTitle || 'New Chat', type: 'title' });
+      const title = (focusedChatNumber >= 0 ? `#${focusedChatNumber + 1} · ` : '') + (focusedChatTitle || 'New Chat');
+      const id = addSnackbar({ key: 'focused-title', message: title, type: 'title' });
       return () => removeSnackbar(id);
     }
-  }, [focusedChatTitle]);
+  }, [focusedChatNumber, focusedChatTitle]);
 
 
   // Execution
@@ -113,11 +137,18 @@ export function AppChat() {
           setMessages(conversationId, history);
           return await runReActUpdatingState(conversationId, prompt, chatLLMId);
         }
+        if (CmdRunBrowse.includes(command) && prompt?.trim() && useBrowseStore.getState().enableCommandBrowse) {
+          setMessages(conversationId, history);
+          return await runBrowseUpdatingState(conversationId, prompt);
+        }
         if (CmdAddRoleMessage.includes(command)) {
           lastMessage.role = command.startsWith('/s') ? 'system' : command.startsWith('/a') ? 'assistant' : 'user';
           lastMessage.sender = 'Bot';
           lastMessage.text = prompt;
           return setMessages(conversationId, history);
+        }
+        if (CmdHelp.includes(command)) {
+          return setMessages(conversationId, [...history, createCommandsHelpMessage()]);
         }
       }
     }
@@ -215,16 +246,23 @@ export function AppChat() {
   const handleConversationExport = (conversationId: DConversationId | null) => setTradeConfig({ dir: 'export', conversationId });
 
   const handleConversationBranch = React.useCallback((conversationId: DConversationId, messageId: string | null) => {
+    showNextTitle.current = true;
     const branchedConversationId = branchConversation(conversationId, messageId);
     addSnackbar({
       key: 'branch-conversation',
       message: 'Branch started.',
       type: 'success',
-      autoHideDuration: 3000,
-      startDecorator: <ForkRightIcon />,
+      overrides: {
+        autoHideDuration: 3000,
+        startDecorator: <ForkRightIcon />,
+      },
     });
-    setFocusedConversationId(branchedConversationId);
-  }, [branchConversation, setFocusedConversationId]);
+    const branchInAltPanel = useUXLabsStore.getState().labsSplitBranching;
+    if (branchInAltPanel)
+      openSplitConversationId(branchedConversationId);
+    else
+      setFocusedConversationId(branchedConversationId);
+  }, [branchConversation, openSplitConversationId, setFocusedConversationId]);
 
   const handleConversationFlatten = (conversationId: DConversationId) => setFlattenConversationId(conversationId);
 
@@ -253,7 +291,12 @@ export function AppChat() {
 
   const handleConversationsDeleteAll = () => setDeleteConversationId(SPECIAL_ID_WIPE_ALL);
 
-  const handleConversationDelete = (conversationId: DConversationId) => setDeleteConversationId(conversationId);
+  const handleConversationDelete = React.useCallback((conversationId: DConversationId, bypassConfirmation: boolean) => {
+    if (bypassConfirmation)
+      setFocusedConversationId(deleteConversation(conversationId));
+    else
+      setDeleteConversationId(conversationId);
+  }, [deleteConversation, setFocusedConversationId]);
 
 
   // Shortcuts
@@ -263,10 +306,10 @@ export function AppChat() {
     ['n', true, false, true, handleConversationNew],
     ['b', true, false, true, () => isFocusedChatEmpty || focusedConversationId && handleConversationBranch(focusedConversationId, null)],
     ['x', true, false, true, () => isFocusedChatEmpty || focusedConversationId && handleConversationClear(focusedConversationId)],
-    ['d', true, false, true, () => focusedConversationId && handleConversationDelete(focusedConversationId)],
+    ['d', true, false, true, () => focusedConversationId && handleConversationDelete(focusedConversationId, false)],
     [ShortcutKeyName.Left, true, false, true, () => handleNavigateHistory('back')],
     [ShortcutKeyName.Right, true, false, true, () => handleNavigateHistory('forward')],
-  ], [focusedConversationId, handleConversationBranch, handleConversationNew, handleMessageRegenerateLast, handleNavigateHistory, isFocusedChatEmpty]);
+  ], [focusedConversationId, handleConversationBranch, handleConversationDelete, handleConversationNew, handleMessageRegenerateLast, handleNavigateHistory, isFocusedChatEmpty]);
   useGlobalShortcuts(shortcuts);
 
 
@@ -278,8 +321,8 @@ export function AppChat() {
   );
 
   const drawerItems = React.useMemo(() =>
-      <ChatDrawerItems
-        conversationId={focusedConversationId}
+      <ChatDrawerItemsMemo
+        activeConversationId={focusedConversationId}
         disableNewButton={isFocusedChatEmpty}
         onConversationActivate={setFocusedConversationId}
         onConversationDelete={handleConversationDelete}
@@ -287,7 +330,7 @@ export function AppChat() {
         onConversationNew={handleConversationNew}
         onConversationsDeleteAll={handleConversationsDeleteAll}
       />,
-    [focusedConversationId, handleConversationNew, isFocusedChatEmpty, setFocusedConversationId],
+    [focusedConversationId, handleConversationDelete, handleConversationNew, isFocusedChatEmpty, setFocusedConversationId],
   );
 
   const menuItems = React.useMemo(() =>
@@ -311,31 +354,58 @@ export function AppChat() {
 
   return <>
 
-    <ChatMessageList
-      conversationId={focusedConversationId}
-      isMessageSelectionMode={isMessageSelectionMode}
-      setIsMessageSelectionMode={setIsMessageSelectionMode}
-      onConversationBranch={handleConversationBranch}
-      onConversationExecuteHistory={handleConversationExecuteHistory}
-      onTextDiagram={handleTextDiagram}
-      onTextImagine={handleTextImaginePlus}
-      onTextSpeak={handleTextSpeak}
-      setBigQueryResult={setBigQueryResult}
-      sx={{
-        flexGrow: 1,
-        backgroundColor: 'background.level1',
-        overflowY: 'auto', // overflowY: 'hidden'
-        minHeight: 96,
-      }} />
+    <Box sx={{
+      flexGrow: 1,
+      display: 'flex', flexDirection: { xs: 'column', md: 'row' },
+      overflow: 'clip',
+    }}>
 
-    <Ephemerals
-      conversationId={focusedConversationId}
-      sx={{
-        // flexGrow: 0.1,
-        flexShrink: 0.5,
-        overflowY: 'auto',
-        minHeight: 64,
-      }} />
+      {chatPaneIDs.map((_conversationId, idx) => (
+        <Box key={'chat-pane-' + idx} onClick={() => setActivePaneIndex(idx)} sx={{
+          flexGrow: 1, flexBasis: 1,
+          display: 'flex', flexDirection: 'column',
+          overflow: 'clip',
+        }}>
+
+          <ChatMessageList
+            conversationId={_conversationId}
+            isMessageSelectionMode={isMessageSelectionMode}
+            setIsMessageSelectionMode={setIsMessageSelectionMode}
+            onConversationBranch={handleConversationBranch}
+            onConversationExecuteHistory={handleConversationExecuteHistory}
+            onTextDiagram={handleTextDiagram}
+            onTextImagine={handleTextImaginePlus}
+            onTextSpeak={handleTextSpeak}
+            setBigQueryResult={setBigQueryResult}
+            sx={{
+              flexGrow: 1,
+              backgroundColor: 'background.level1',
+              overflowY: 'auto',
+              minHeight: 96,
+              // outline the current focused pane
+              ...(chatPaneIDs.length < 2 ? {}
+                : (_conversationId === focusedConversationId)
+                  ? {
+                    border: '2px solid',
+                    borderColor: 'primary.solidBg',
+                  } : {
+                    padding: '2px',
+                  }),
+            }}
+          />
+
+          <Ephemerals
+            conversationId={_conversationId}
+            sx={{
+              // flexGrow: 0.1,
+              flexShrink: 0.5,
+              overflowY: 'auto',
+              minHeight: 64,
+            }} />
+
+        </Box>
+      ))}
+    </Box>
 
     <Composer
       conversationId={focusedConversationId}

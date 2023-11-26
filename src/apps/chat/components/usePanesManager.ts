@@ -9,6 +9,9 @@ import { DConversationId, useChatStore } from '~/common/state/store-chats';
 // change this to increase/decrease the number history steps per pane
 const MAX_HISTORY_LENGTH = 10;
 
+// change to true to enable verbose console logging
+const DEBUG_PANES_MANAGER = false;
+
 
 interface ChatPane {
 
@@ -28,8 +31,9 @@ interface AppChatPanesStore {
 
   // actions
   openConversationInFocusedPane: (conversationId: DConversationId) => void;
+  openConversationInSplitPane: (conversationId: DConversationId) => void;
   navigateHistoryInFocusedPane: (direction: 'back' | 'forward') => boolean;
-  focusChatPane: (paneIndex: number) => void;
+  setFocusedPaneIndex: (paneIndex: number) => void;
   splitChatPane: (numberOfPanes: number) => void;
   unsplitChatPane: (paneIndexToKeep: number) => void;
   onConversationsChanged: (conversationIds: DConversationId[]) => void;
@@ -67,8 +71,11 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
 
         // Check if the conversation is already open in the focused pane.
         const focusedPane = chatPanes[chatPaneFocusIndex];
-        if (focusedPane.conversationId === conversationId)
+        if (focusedPane.conversationId === conversationId) {
+          if (DEBUG_PANES_MANAGER)
+            console.log(`open-focuses: ${conversationId} is open in focused pane`, chatPaneFocusIndex, chatPanes);
           return state;
+        }
 
         // Truncate the future history before adding the new conversation.
         const truncatedHistory = focusedPane.history.slice(0, focusedPane.historyIndex + 1);
@@ -83,11 +90,39 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
           historyIndex: newHistory.length - 1,
         };
 
+        if (DEBUG_PANES_MANAGER)
+          console.log(`open-focuses: set ${conversationId} in focused pane`, chatPaneFocusIndex, chatPanes);
+
         // Return the updated state.
         return {
           chatPanes: newPanes,
         };
       });
+    },
+
+    openConversationInSplitPane: (conversationId: DConversationId) => {
+      // Open a conversation in a new pane, reusing an existing pane if possible.
+      const { chatPanes, chatPaneFocusIndex, openConversationInFocusedPane } = _get();
+
+      // one pane open: split it
+      if (chatPanes.length === 1) {
+        _set({
+          chatPanes: Array.from({ length: 2 }, () => ({ ...chatPanes[0] })),
+          chatPaneFocusIndex: 1,
+        });
+      }
+      // more than 2 panes, reuse the alt pane
+      else if (chatPanes.length >= 2 && chatPaneFocusIndex !== null) {
+        _set({
+          chatPaneFocusIndex: chatPaneFocusIndex === 0 ? 1 : 0,
+        });
+      }
+
+      // will create a pane if none exists, or load the conversation in the focused pane
+      openConversationInFocusedPane(conversationId);
+
+      if (DEBUG_PANES_MANAGER)
+        console.log(`open-split-pane: after:`, _get().chatPanes);
     },
 
     navigateHistoryInFocusedPane: (direction: 'back' | 'forward'): boolean => {
@@ -102,8 +137,11 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
         newHistoryIndex--;
       else if (direction === 'forward' && newHistoryIndex < focusedPane.history.length - 1)
         newHistoryIndex++;
-      else
+      else {
+        if (DEBUG_PANES_MANAGER)
+          console.log(`navigateHistoryInFocusedPane: no history ${direction} for`, focusedPane);
         return false;
+      }
 
       const newPanes = [...chatPanes];
       newPanes[chatPaneFocusIndex] = {
@@ -112,6 +150,9 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
         historyIndex: newHistoryIndex,
       };
 
+      if (DEBUG_PANES_MANAGER)
+        console.log(`navigateHistoryInFocusedPane: ${direction} to`, focusedPane, newPanes);
+
       _set({
         chatPanes: newPanes,
       });
@@ -119,9 +160,13 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
       return true;
     },
 
-    focusChatPane: (paneIndex: number) =>
-      _set({
-        chatPaneFocusIndex: paneIndex,
+    setFocusedPaneIndex: (paneIndex: number) =>
+      _set(state => {
+        if (state.chatPaneFocusIndex === paneIndex)
+          return state;
+        return {
+          chatPaneFocusIndex: paneIndex >= 0 && paneIndex < state.chatPanes.length ? paneIndex : null,
+        };
       }),
 
     splitChatPane: (numberOfPanes: number) => {
@@ -206,14 +251,24 @@ const useAppChatPanesStore = create<AppChatPanesStore>()(persist(
 export function usePanesManager() {
   // use Panes
   const { onConversationsChanged, ...panesFunctions } = useAppChatPanesStore(state => {
-    const { chatPaneFocusIndex, chatPanes, openConversationInFocusedPane, navigateHistoryInFocusedPane, onConversationsChanged } = state;
-    const focusedChatPane = chatPaneFocusIndex !== null ? chatPanes[chatPaneFocusIndex] ?? null : null;
-    return {
-      // chatPanes: chatPanes as Readonly<ChatPane[]>,
-      focusedChatPane,
-      openConversationInFocusedPane,
+    const {
+      chatPaneFocusIndex,
+      chatPanes,
       navigateHistoryInFocusedPane,
       onConversationsChanged,
+      openConversationInFocusedPane,
+      openConversationInSplitPane,
+      setFocusedPaneIndex,
+    } = state;
+    const focusedConversationId = chatPaneFocusIndex !== null ? chatPanes[chatPaneFocusIndex]?.conversationId ?? null : null;
+    return {
+      chatPanes: chatPanes as Readonly<ChatPane[]>,
+      focusedConversationId,
+      navigateHistoryInFocusedPane,
+      onConversationsChanged,
+      openConversationInFocusedPane,
+      openConversationInSplitPane,
+      setFocusedPaneIndex,
     };
   }, shallow);
 

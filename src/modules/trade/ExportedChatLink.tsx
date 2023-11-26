@@ -19,7 +19,7 @@ import { getChatLinkRelativePath } from '~/common/app.routes';
 import { getOriginUrl } from '~/common/util/urlUtils';
 import { webShare, webSharePresent } from '~/common/util/pwaUtils';
 
-import type { StorageDeleteSchema, StoragePutSchema } from './server/trade.router';
+import type { StorageDeleteSchema, StoragePutSchema } from './server/link';
 import { removeChatLinkItem } from './store-module-trade';
 
 
@@ -50,7 +50,7 @@ export function ExportedChatLink(props: { onClose: () => void, response: Storage
   const onOpen = () => setOpened(true);
 
   const onCopy = () => {
-    copyToClipboard(fullUrl);
+    copyToClipboard(fullUrl, 'Public link');
     setCopied(true);
   };
 

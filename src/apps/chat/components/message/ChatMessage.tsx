@@ -192,6 +192,8 @@ function useSanityTextDiffs(text: string, diffText: string | undefined, enabled:
 }
 
 
+export const ChatMessageMemo = React.memo(ChatMessage);
+
 /**
  * The Message component is a customizable chat message UI component that supports
  * different roles (user, assistant, and system), text editing, syntax highlighting,
@@ -277,7 +279,7 @@ export function ChatMessage(props: {
   const closeOperationsMenu = () => setOpsMenuAnchor(null);
 
   const handleOpsCopy = (e: React.MouseEvent) => {
-    copyToClipboard(textSel);
+    copyToClipboard(textSel, 'Text');
     e.preventDefault();
     closeOperationsMenu();
     closeSelectionMenu();
