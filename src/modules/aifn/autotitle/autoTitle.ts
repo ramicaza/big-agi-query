@@ -4,6 +4,15 @@ import { useModelsStore } from '~/modules/llms/store-llms';
 import { useChatStore } from '~/common/state/store-chats';
 
 
+const filterBigQueryMessages = (m: any) => {
+  if (m.role !== 'user' && m.text.startsWith('Getting schema for `')) return false;
+  try {
+    const json = JSON.parse(m.text);
+    if (json.fields) return false;
+  } catch (e) { }
+  return true;
+}
+
 /**
  * Creates the AI titles for conversations, by taking the last 5 first-lines and asking AI what's that about
  */
@@ -19,7 +28,8 @@ export function autoTitle(conversationId: string) {
   if (!conversation || conversation.autoTitle || conversation.userTitle) return;
 
   // first line of the last 5 messages
-  const historyLines: string[] = conversation.messages.filter(m => m.role !== 'system').slice(-5).map(m => {
+  const historyLines: string[] = conversation.messages.filter(filterBigQueryMessages)
+  .filter(m => m.role !== 'system').slice(-5).map(m => {
     let text = m.text.split('\n')[0];
     text = text.length > 100 ? text.substring(0, 100) + '...' : text;
     text = `${m.role === 'user' ? 'You' : 'Assistant'}: ${text}`;

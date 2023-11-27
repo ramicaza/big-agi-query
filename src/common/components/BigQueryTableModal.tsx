@@ -50,7 +50,7 @@ function convertBigQueryDataToRows(data: BigQueryResponse) {
         row.f.forEach((cell, cellIndex) => {
             const columnName = data.schema.fields[cellIndex].name;
             if (data.schema.fields[cellIndex].type === 'TIMESTAMP') {
-                console.log('cell.v', cell.v, typeof cell.v);
+                // console.log('cell.v', cell.v, typeof cell.v);
                 // bigquery sends these in a stupif format so here we go
                 const date = new Date(parseFloat(cell.v)*1000);
                 rowData[columnName] = date.toISOString();
