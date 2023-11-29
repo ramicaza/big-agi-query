@@ -39,7 +39,7 @@
     "browser-fs-access": "^0.35.0",
     "eventsource-parser": "^1.1.1",
     "idb-keyval": "^6.2.1",
-    "next": "^13.4.19",
+    "next": "13.4.8",
     "pdfjs-dist": "4.0.189",
     "plantuml-encoder": "^1.4.0",
     "prismjs": "^1.29.0",
