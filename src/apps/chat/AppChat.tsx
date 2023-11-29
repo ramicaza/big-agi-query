@@ -245,7 +245,7 @@ export function AppChat() {
 
   const handleConversationExport = (conversationId: DConversationId | null) => setTradeConfig({ dir: 'export', conversationId });
 
-  const handleConversationBranch = React.useCallback((conversationId: DConversationId, messageId: string | null) => {
+  const handleConversationBranch = React.useCallback((conversationId: DConversationId, messageId: string | null): DConversationId | null => {
     showNextTitle.current = true;
     const branchedConversationId = branchConversation(conversationId, messageId);
     addSnackbar({
@@ -262,6 +262,7 @@ export function AppChat() {
       openSplitConversationId(branchedConversationId);
     else
       setFocusedConversationId(branchedConversationId);
+    return branchedConversationId;
   }, [branchConversation, openSplitConversationId, setFocusedConversationId]);
 
   const handleConversationFlatten = (conversationId: DConversationId) => setFlattenConversationId(conversationId);
@@ -426,10 +427,16 @@ export function AppChat() {
     {!!diagramConfig && <DiagramsModal config={diagramConfig} onClose={() => setDiagramConfig(null)} />}
 
     {/* Flatten */}
-    {!!flattenConversationId && <FlattenerModal conversationId={flattenConversationId} onClose={() => setFlattenConversationId(null)} />}
+    {!!flattenConversationId && (
+      <FlattenerModal
+        conversationId={flattenConversationId}
+        onConversationBranch={handleConversationBranch}
+        onClose={() => setFlattenConversationId(null)}
+      />
+    )}
 
     {/* Import / Export  */}
-    {!!tradeConfig && <TradeModal config={tradeConfig} onClose={() => setTradeConfig(null)} />}
+    {!!tradeConfig && <TradeModal config={tradeConfig} onConversationActivate={setFocusedConversationId} onClose={() => setTradeConfig(null)} />}
 
 
     {/* [confirmation] Reset Conversation */}

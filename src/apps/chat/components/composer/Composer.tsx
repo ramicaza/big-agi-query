@@ -15,6 +15,7 @@ import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import TelegramIcon from '@mui/icons-material/Telegram';
 
 import type { ChatModeId } from '../../AppChat';
+import { getChatTimeoutMs } from '../../store-app-chat';
 
 import { CmdRunReact } from '~/modules/aifn/react/react';
 import { ContentReducer } from '~/modules/aifn/summarize/ContentReducer';
@@ -33,7 +34,6 @@ import { getClipboardItems, supportsClipboardRead } from '~/common/util/clipboar
 import { htmlTableToMarkdown } from '~/common/util/htmlTableToMarkdown';
 import { launchAppCall } from '~/common/app.routes';
 import { openLayoutPreferences } from '~/common/layout/store-applayout';
-import { pdfToText } from '~/common/util/pdfToText';
 import { playSoundUrl } from '~/common/util/audioUtils';
 import { useDebouncer } from '~/common/components/useDebouncer';
 import { useGlobalShortcut } from '~/common/components/useGlobalShortcut';
@@ -47,6 +47,7 @@ import { ButtonFileAttach } from './ButtonFileAttach';
 import { ChatModeMenu } from './ChatModeMenu';
 import { TokenBadge } from './TokenBadge';
 import { TokenProgressbar } from './TokenProgressbar';
+import { pdfToText } from '../attachments/pdfToText';
 import { useComposerStartupText } from './store-composer';
 
 
@@ -258,7 +259,7 @@ export function Composer(props: {
   }, [chatModeId, composeText, micContinuation, props, setComposeText]);
 
   const { isSpeechEnabled, isSpeechError, isRecordingAudio, isRecordingSpeech, toggleRecording } =
-    useSpeechRecognition(onSpeechResultCallback, 2000, 'm');
+    useSpeechRecognition(onSpeechResultCallback, getChatTimeoutMs() || 2000, 'm');
 
   const micIsRunning = !!speechInterimResult;
   const micContinuationTrigger = micContinuation && !micIsRunning && !assistantTyping;
@@ -498,7 +499,7 @@ export function Composer(props: {
         {/* Button column and composer Text (mobile: top, desktop: left and center) */}
         <Grid xs={12} md={9}><Stack direction='row' spacing={{ xs: 1, md: 2 }}>
 
-          {/* Vertical buttons */}
+          {/* Vertical (attach) buttons */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 0, md: 2 } }}>
 
             {/* [mobile] Mic button */}
@@ -515,9 +516,10 @@ export function Composer(props: {
 
           </Box>
 
-          {/* Edit box, with Drop overlay */}
+          {/* Edit box + mic buttons + overlays */}
           <Box sx={{ flexGrow: 1, position: 'relative' }}>
 
+            {/* Edit box with inner Token Progress bar */}
             <Box sx={{ position: 'relative' }}>
 
               <Textarea
@@ -549,10 +551,20 @@ export function Composer(props: {
                   lineHeight: 1.75,
                 }} />
 
-              {tokenLimit > 0 && (directTokens > 0 || (historyTokens + responseTokens) > 0) && <TokenProgressbar history={historyTokens} response={responseTokens} direct={directTokens} limit={tokenLimit} />}
+              {tokenLimit > 0 && (directTokens > 0 || (historyTokens + responseTokens) > 0) && (
+                <TokenProgressbar history={historyTokens} response={responseTokens} direct={directTokens} limit={tokenLimit} />
+              )}
+
+              {!!tokenLimit && (
+                <TokenBadge
+                  directTokens={directTokens} indirectTokens={historyTokens + responseTokens} tokenLimit={tokenLimit}
+                  showExcess absoluteBottomRight
+                />
+              )}
 
             </Box>
 
+            {/* Mic & Mic Continuation Buttons */}
             {isSpeechEnabled && (
               <Box sx={{
                 position: 'absolute', top: 0, right: 0,
@@ -571,13 +583,7 @@ export function Composer(props: {
               </Box>
             )}
 
-            {!!tokenLimit && (
-              <TokenBadge
-                directTokens={directTokens} indirectTokens={historyTokens + responseTokens} tokenLimit={tokenLimit}
-                showExcess absoluteBottomRight
-              />
-            )}
-
+            {/* overlay: Mic */}
             {micIsRunning && (
               <Card
                 color='primary' invertedColors variant='soft'
@@ -598,6 +604,7 @@ export function Composer(props: {
               </Card>
             )}
 
+            {/* overlay: Drag & Drop*/}
             <Card
               color='primary' invertedColors variant='soft'
               sx={{
