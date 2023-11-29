@@ -39,7 +39,7 @@ export const useBigQuery = (query: string, setBigQueryResult?: (results: any) =>
   const setAccessToken = useAccessTokenStore((state) => state.setAccessToken);
 
   const [loadingQuery, setLoadingQuery] = useState(false);
-  const [queryError, setQueryError] = useState(null);
+  const [queryError, setQueryError] = useState<null | string>(null);
   const [loadingCost, setLoadingCost] = useState(false);
   const [estimatedCost, setEstimatedCost] = useState<number | null>(null);
   const [loadingSchema, setLoadingSchema] = useState(false);
@@ -187,9 +187,9 @@ export const useBigQuery = (query: string, setBigQueryResult?: (results: any) =>
       const billableBytes = resp.result.totalBytesProcessed;
       console.log(`Billable bytes: ${billableBytes}`);
       setBigQueryResult && setBigQueryResult(resp.result);
+      setQueryError(null);
     } catch (err: any) {
       console.error('Query error during run', err);
-      console.log(err?.result?.error?.message || err?.result?.error?.status);
       setQueryError(err?.result?.error?.message || err?.result?.error?.status);
     }
     setLoadingQuery(false);
@@ -214,9 +214,14 @@ export const useBigQuery = (query: string, setBigQueryResult?: (results: any) =>
       console.log(`Billable bytes: ${billableBytes}`);
       const cost = billableBytes * (6.25 / Math.pow(2, 40));
       setEstimatedCost(cost);
+      setQueryError(null);
     } catch (err: any) {
       console.error('Query error during estimateCost', err);
-      setQueryError(err?.result?.error?.message || err?.result?.error?.status);
+      if (err?.status === 401) {
+        setQueryError('Please press the "Cost Estimate" button to log-in and evaluate this query');
+      } else {
+        setQueryError(err?.result?.error?.message || err?.result?.error?.status);
+      }
     }
     setLoadingCost(false);
   };
